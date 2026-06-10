@@ -1,3 +1,5 @@
+live-link (https://syllabus-chat-box.vercel.app/login)
+
 # 📚 Syllabus Checkbox - MERN Full Stack App
 
 This project is a MERN (MongoDB, Express, React, Node.js) full-stack application. It features a modern React interface styled with custom Glassmorphism components, secure JWT-based authentication, and a MongoDB-connected REST API for real-time progress syncing, syllabus updates, and class file sharing.
