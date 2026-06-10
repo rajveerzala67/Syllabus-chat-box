@@ -1,0 +1,209 @@
+import React, { useContext, useState, useEffect } from 'react';
+import { AuthContext, api } from '../context/AuthContext';
+import { Upload, Trash2, Download, File, Loader } from 'lucide-react';
+
+const Files = () => {
+  const { user } = useContext(AuthContext);
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const isCoordinator = user?.role === 'coordinator';
+
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/files');
+      setFiles(res.data);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Failed to load shared files');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  const handleFileChange = (e) => {
+    setSelectedFiles(Array.from(e.target.files));
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) {
+      alert('Please choose at least one file');
+      return;
+    }
+
+    // Client side type check (images or pdf)
+    const validFiles = selectedFiles.filter(file => {
+      const type = file.type;
+      return type.startsWith('image/') || type === 'application/pdf';
+    });
+
+    if (validFiles.length !== selectedFiles.length) {
+      alert('Some files were ignored. Only images and PDF files are allowed!');
+    }
+
+    if (validFiles.length === 0) return;
+
+    setUploading(true);
+    setErrorMsg('');
+
+    const formData = new FormData();
+    validFiles.forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      await api.post('/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setSelectedFiles([]);
+      // Reset input element
+      const fileInput = document.getElementById('file-upload-input');
+      if (fileInput) fileInput.value = '';
+      
+      alert('Upload complete');
+      fetchFiles();
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.message || 'Error uploading files');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+    try {
+      await api.delete(`/files/${id}`);
+      fetchFiles();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to delete file');
+    }
+  };
+
+  const handleDownload = async (fileId, fileName) => {
+    try {
+      const res = await api.get(`/files/download/${fileId}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+      alert('Error downloading file');
+    }
+  };
+
+  return (
+    <div className="container files-container fade-in">
+      <div className="glass-card files-card">
+        <h2>📎 Shared Class Files</h2>
+
+        {isCoordinator && (
+          <div className="upload-section glass-card inner-card">
+            <h3>Coordinator Upload</h3>
+            <div className="upload-controls">
+              <input
+                type="file"
+                id="file-upload-input"
+                accept="image/*,application/pdf"
+                multiple
+                onChange={handleFileChange}
+              />
+              <button 
+                onClick={handleUpload} 
+                className="primary-btn size-auto upload-btn"
+                disabled={uploading || selectedFiles.length === 0}
+              >
+                {uploading ? (
+                  <>
+                    <Loader className="spinner mr-6" size={16} />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} className="mr-6" />
+                    <span>Upload</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <small className="help-text">Allowed formats: Images, PDF. Max file size: 10MB.</small>
+          </div>
+        )}
+
+        {errorMsg && <div className="error-alert">{errorMsg}</div>}
+
+        <div className="files-list">
+          {loading ? (
+            <div className="loading-spinner">
+              <Loader className="spinner" size={24} />
+              <span>Fetching files...</span>
+            </div>
+          ) : files.length === 0 ? (
+            <p className="no-files-msg">No files uploaded yet.</p>
+          ) : (
+            <div className="files-grid">
+              {files.map((file) => {
+                const isImage = file.mimeType.startsWith('image/');
+                const when = new Date(file.uploadedAt).toLocaleString();
+                return (
+                  <div key={file._id} className="file-item-card glass-card inner-card">
+                    <div className="file-info-left">
+                      <div className="file-icon-box">
+                        <File className="file-icon" size={24} />
+                      </div>
+                      <div className="file-metadata">
+                        <span className="file-name">{file.name}</span>
+                        <span className="file-details">
+                          {file.mimeType} • {when}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="file-actions">
+                      <button 
+                        onClick={() => handleDownload(file._id, file.name)} 
+                        className="download-btn"
+                        title="Download file"
+                      >
+                        <Download size={18} />
+                      </button>
+                      
+                      {isCoordinator && (
+                        <button 
+                          onClick={() => handleDelete(file._id)} 
+                          className="delete-btn"
+                          title="Delete file"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Files;

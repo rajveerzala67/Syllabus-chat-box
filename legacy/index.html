@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/128/10433/10433048.png" type="x-icon/image">
+  <title>Syllabus Checkbox</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #572091df, #3a5a92);
+      transition: all 0.3s ease;
+      height: 100vh;
+    }
+
+    /* Fade-in Animation */
+    .fade-in {
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Centered Login Card */
+    .login-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .login-box {
+      background: white;
+      padding: 50px 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      width: 400px;
+      text-align: center;
+    }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, #324264, #6a11cb);
+      color: white;
+      padding: 15px 15px 23px 15px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      box-shadow: 10px 8px 20px rgb(22, 22, 22);
+    }
+
+    .welcome-text {
+      font-size: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .username:focus {
+      border-color: #2575fc;
+      box-shadow: 10px 8px 15px rgba(0, 0, 0, 0.4);
+      border: none;
+      outline: none;
+    }
+
+    .username:hover {
+      box-shadow: 10px 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .text:hover {
+      transform: scale(1.03);
+      transition: transform 0.2s ease-in-out;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      border-radius: 5px;
+    }
+
+    .form-section {
+      display: flex;
+      padding: 10px;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .login-box h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .login-box input:focus {
+      border-color: #2575fc;
+      box-shadow: 0 0 5px rgba(37, 117, 252, 0.4);
+    }
+
+    .login-box button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #2575fc, #6a11cb);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .login-box button:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .Page-button:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .Page-button {
+      margin-top: 15px;
+      padding: 12px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #2575fc, #6a11cb);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .Page-button2:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .Page-button2 {
+      margin-top: 15px;
+      padding: 12px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #000000, #000000);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    /* Main App & Tabs */
+    .container {
+      display: none;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    nav {
+      background-color: #0077cc;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 25px;
+      border-radius: 0 0 10px 10px;
+    }
+
+    nav .tabs span {
+      margin: 0 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    nav .tabs span:hover {
+      text-decoration: underline;
+      color: #e0f0ff;
+    }
+
+    .content {
+      display: none;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      margin-top: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .content.active {
+      display: block;
+    }
+
+    .checkbox label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 15px opx;
+      font-size: 18px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .checkbox input[type="checkbox"] {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+
+    .tick-mark {
+      display: none;
+      font-size: 20px;
+      color: green;
+      transition: transform 0.3s ease;
+    }
+
+    .ticked .tick-mark {
+      display: inline;
+      transform: scale(1.2);
+    }
+
+    .ticked span.text {
+      color: green;
+      font-weight: bold;
+    }
+
+    label:hover {
+      background-color: #f3faff;
+    }
+
+    /* 🔄 Animated Book Logo */
+    .book-logo {
+      display: inline-table;
+      font-size: 30px;
+      animation: bookBounce 2s infinite ease-in-out;
+      margin: 0 7px;
+    }
+
+    @keyframes bookBounce {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+  </style>
+  <style>
+    .dev-name:hover {
+      background-color: #e0f7fa;
+      text-decoration: underline;
+    }
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .login-box {
+        width: 90%;
+        padding: 30px 20px;
+      }
+
+      .welcome-text {
+        font-size: 18px;
+      }
+
+      .container {
+        padding: 10px;
+      }
+
+      nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      nav h2 {
+        font-size: 20px;
+      }
+
+      nav .tabs span {
+        margin: 10px 5px;
+        font-size: 16px;
+      }
+
+      .checkbox label {
+        font-size: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .login-box input {
+        font-size: 14px;
+      }
+
+      .Page-button,
+      .Page-button2,
+      .login-box button {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      h1,
+      h2 {
+        font-size: 22px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-box {
+        width: 95%;
+        padding: 20px 15px;
+      }
+
+      nav h2 {
+        font-size: 18px;
+      }
+
+      .checkbox label {
+        font-size: 14px;
+      }
+
+      .login-box input {
+        padding: 10px;
+      }
+
+      .Page-button,
+      .Page-button2,
+      .login-box button {
+        padding: 8px;
+      }
+
+      h1,
+      h2 {
+        font-size: 20px;
+      }
+    }
+
+    /* Extra Mobile Styling */
+    @media (max-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #572091df, #3a5a92);
+        box-sizing: border-box;
+      }
+
+      .login-box {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s;
+      }
+
+      .login-box:hover {
+        transform: scale(1.02);
+      }
+
+      .Page-button,
+      .Page-button2 {
+        transition: all 0.4s ease;
+      }
+
+      .Page-button:hover,
+      .Page-button2:hover {
+        background: linear-gradient(135deg, #ff512f, #dd2476);
+      }
+
+      nav {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      nav .tabs {
+        margin-top: 10px;
+      }
+
+      nav .tabs span {
+        display: block;
+        margin: 5px 0;
+      }
+
+      .checkbox label {
+        border: 1px solid #eee;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+      }
+
+      .checkbox label:hover {
+        background-color: #fdfdfd;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .welcome-banner {
+        padding: 10px 5px 15px 5px;
+      }
+
+      .book-logo {
+        font-size: 22px;
+      }
+
+      .login-box {
+        border-radius: 15px;
+        padding: 25px 15px;
+      }
+
+      .Page-button {
+        background: linear-gradient(135deg, #ff9966, #ff5e62);
+      }
+
+      .Page-button2 {
+        background: linear-gradient(135deg, #485563, #29323c);
+      }
+    }
+  </style>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+
+<body>
+  <div class="login-page fade-in" id="loginPage">
+    <div class="login-box">
+
+      <!-- Welcome Box -->
+      <div class="welcome-banner">
+        <div class="welcome-text">📖Welcome to Syllabus Checkbox <span class="book-logo">📖</span> </div>
+      </div>
+
+      <div class="form-section">
+        <label for="username" style="font-size: 16px; text-align: left; color: #444;">Username:</label>
+        <input type="text" id="username" name="username" placeholder="Enter Username" class="username" width="2" />
+
+        <label for="password" style="font-size: 16px; text-align: left; color: #444;">Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter Password" class="username" onkeypress="handleKeyPress(event)" />
+
+        <label for="role" style="font-size: 16px; text-align: left; color: #444;">Login as:</label>
+        <select id="role" class="username" style="padding: 10px;">
+          <option value="student" selected>Student</option>
+          <option value="coordinator">Class Coordinator</option>
+        </select>
+
+        <button onclick="login()">Login</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAIN WEBSITE -->
+  <div class="container fade-in" id="mainSite">
+    <nav>
+      <div><strong>
+          <h2><span class="book-logo">📖</span>📘 Syllabus Checkbox</h2>
+        </strong></div>
+      <div class="tabs">
+        <span onclick="showTab('home')">Home</span>
+        <span onclick="showTab('files')">Files</span>
+        <span onclick="showTab('about')">About Us</span>
+        <span onclick="showTab('contact')">Contact Us</span>
+        <span onclick="signOut()">Sign Out</span>
+      </div>
+    </nav>
+
+    <!-- TABS -->
+    <div class="content active fade-in" id="home">
+      <h1>📚Basics of Subjects</h1>
+      <div class="checkbox" id="topicList">
+        <label><input type="checkbox" onclick="toggle(this)">
+          <span class="tick-mark">✅</span>
+          <span class="text">Grammar Tenses Basics</span>
+        </label>
+        <label><input type="checkbox" onclick="toggle(this)">
+          <span class="tick-mark">✅</span>
+          <span class="text">Important History Dates According to classes</span>
+        </label>
+        <label><input type="checkbox" onclick="toggle(this)">
+          <span class="tick-mark">✅</span>
+          <span class="text">Science Chapters</span>
+        </label>
+        <label><input type="checkbox" onclick="toggle(this)">
+          <span class="tick-mark">✅</span>
+          <span class="text">Math Practice</span>
+        </label>
+        <label><input type="checkbox" onclick="toggle(this)">
+          <span class="tick-mark">✅</span>
+          <span class="text">Computer Basics</span>
+        </label>
+      </div>
+
+      <button onclick="goToDetails()"
+        style="margin-top: 20px; padding: 12px 20px; font-size: 16px; border-radius: 8px; background: linear-gradient(135deg, #2575fc, #6a11cb); color: white; border: none; cursor:pointer ;"
+        class="Page-button">Proceed</button><br><br>
+      <button onclick="window.location.href='index2.html';"
+        style="margin-top: 15px; padding: 10px 18px; font-size: 16px; border-radius: 8px; background: linear-gradient(135deg, #43cea2, #185a9d); color: white; border: none; cursor: pointer;"
+        class="Page-button">Check
+        Syllabus Updates</button>
+
+
+      <div id="detailsBox" style="margin-top: 25px;"></div>
+    </div>
+
+    <div class="content fade-in" id="files">
+      <h2>📎 Shared Class Files</h2>
+      <div id="uploadSection" style="display:none; margin-bottom: 16px;">
+        <p><strong>Coordinator Upload</strong></p>
+        <input type="file" id="fileInput" accept="image/*,application/pdf" multiple />
+        <button class="Page-button" style="width:auto;" onclick="uploadSelectedFiles()">Upload</button>
+        <small style="display:block; margin-top:6px; color:#555;">Allowed: images, PDF. Stored locally in this browser.</small>
+      </div>
+      <div id="filesList" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="content fade-in" id="about">
+      <h2>About Us</h2>
+      <p>We help students track their syllabus and stay organized throughout the year!<br>And we also provide tips and
+        tricks to help you study effectively!</p>
+    </div>
+
+    <div class="content fade-in" id="contact">
+      <p>Developer Name : <span class="dev-name" style="color:skyblue; cursor:pointer;">Syllabus Checkbox Group</span> </p>
+      <p>Email: support@syllabusCheckbox.com</p>
+      <p>Ongoing Mail : sgm81996@gmail.com</p>
+      <p>Phone: +91 1234567890</p>
+      <p>Developer Name : <span style=" color:skyblue; cursor:pointer" ;>Syllabus Checkbox Group</span> </p>
+
+    </div>
+
+    <div class="content fade-in" id="details">
+      <h2>📖 Detailed Information</h2>
+      <div id="detailsContent" style="margin-top: 20px;"></div>
+      <button onclick="showTab('home')"
+        style="margin-top: 20px; padding: 10px 16px; background-color: #333; color: white; border: none; border-radius: 6px; cursor: pointer;"
+        class="Page-button2">←
+        Back to Home</button>
+    </div>
+  </div>
+
+  <script>
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        login();
+      }
+    }
+
+    const DB_NAME = 'syllabusFilesDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'files';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            store.createIndex('uploadedAt', 'uploadedAt');
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function saveFileRecord(file) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const record = {
+          name: file.name,
+          type: file.type,
+          data: file,
+          uploadedAt: Date.now()
+        };
+        const req = store.add(record);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function getAllFiles() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function deleteFileById(id) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function getCurrentRole() {
+      return localStorage.getItem('currentRole') || 'student';
+    }
+
+    function setRoleUI(role) {
+      const upload = document.getElementById('uploadSection');
+      if (upload) upload.style.display = role === 'coordinator' ? 'block' : 'none';
+    }
+
+    async function renderFiles() {
+      const list = document.getElementById('filesList');
+      const role = getCurrentRole();
+      const files = await getAllFiles();
+      if (!list) return;
+      if (!files.length) {
+        list.innerHTML = '<p style="color:#555;">No files uploaded yet.</p>';
+        return;
+      }
+      const rows = files
+        .sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0))
+        .map(f => {
+          const url = URL.createObjectURL(f.data);
+          const nameSafe = (f.name || 'file');
+          const when = new Date(f.uploadedAt || Date.now()).toLocaleString();
+          const viewBtn = `<a href="${url}" download="${nameSafe}" style="margin-right:8px;">Download</a>`;
+          const delBtn = role === 'coordinator' ? `<button class="Page-button2" style="width:auto; padding:6px 10px;" onclick="removeFile(${f.id})">Delete</button>` : '';
+          return `<div style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+            <span style="flex:1;">${nameSafe} <small style=\"color:#666;\">(${f.type || 'unknown'}) • ${when}</small></span>
+            ${viewBtn}
+            ${delBtn}
+          </div>`;
+        }).join('');
+      list.innerHTML = rows;
+    }
+
+    async function removeFile(id) {
+      await deleteFileById(id);
+      renderFiles();
+    }
+
+    async function uploadSelectedFiles() {
+      const input = document.getElementById('fileInput');
+      if (!input || !input.files || input.files.length === 0) {
+        alert('Please choose at least one file');
+        return;
+      }
+      const files = Array.from(input.files);
+      for (const file of files) {
+        if (!(file.type.startsWith('image/') || file.type === 'application/pdf')) {
+          continue;
+        }
+        await saveFileRecord(file);
+      }
+      input.value = '';
+      renderFiles();
+      alert('Upload complete');
+    }
+
+    function login() {
+      const user = document.getElementById('username').value.trim().toLowerCase();
+      const pass = document.getElementById('password').value.trim();
+      const role = document.getElementById('role').value;
+
+      if (user === 'silveroak' && pass === '12345') {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('currentRole', role);
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainSite').style.display = 'block';
+        setRoleUI(role);
+        renderFiles();
+      }
+      else if (user === '' && pass === '') {
+        alert("Please Enter User Name And Password.....");
+      }
+      else if (user === 'rajveer' && pass === '') {
+        alert("Please Enter the Pass !! UserName Is Correct... ")
+      }
+      else {
+        alert("Incorrect Username or Password!! please Try again !! Ask Pass From Rajveer");
+      }
+    }
+
+
+
+    function toggle(checkbox) {
+      const label = checkbox.parentElement;
+      label.classList.toggle("ticked");
+    }
+
+    function showTab(tabId) {
+      const contents = document.querySelectorAll('.content');
+      contents.forEach(c => c.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'files') {
+        setRoleUI(getCurrentRole());
+        renderFiles();
+      }
+    }
+
+    function signOut() {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('currentRole');
+      document.getElementById('mainSite').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    function goToDetails() {
+      const checkboxes = document.querySelectorAll('.checkbox input[type="checkbox"]');
+      const detailsBox = document.getElementById('detailsContent');
+      detailsBox.innerHTML = '';
+
+      checkboxes.forEach((box, i) => {
+        if (box.checked) {
+          const topic = box.nextElementSibling.nextElementSibling.textContent;
+
+          let moreInfo = '';
+          switch (i) {
+            case 0:
+              moreInfo = `
+              <strong>Grammar Tenses Basics</strong><br>
+              <p>
+                • Learn about all 12 tenses in English: Present (Simple, Continuous, Perfect, Perfect Continuous), Past and Future forms.<br>
+                • Examples and usage for each tense to understand how they affect sentence structure.<br>
+                • Real-life applications: how tenses are used in writing, conversation, and exams.<br>
+                • Common mistakes to avoid and tips for mastering tense usage easily.
+              </p>`;
+              break;
+            case 1:
+              moreInfo = `
+              <strong>Important History Dates According to Classes</strong><br>
+              <p>
+                • Class 6: Harappan Civilization (c. 2500 BCE), Vedic Age (1500 BCE).<br>
+                • Class 7: Mughal Empire (1526 CE), Bhakti Movement (8th - 17th Century).<br>
+                • Class 8: Revolt of 1857, Formation of INC (1885), Indian Independence (1947).<br>
+                • Simple timeline charts to help remember key years and events.<br>
+                • Useful for quick revision and social studies exams.
+              </p>`;
+              break;
+            case 2:
+              moreInfo = `
+              <strong>Science Chapters</strong><br>
+              <p>
+                • Physics: Motion, Force, Energy, Light & Sound explained with simple experiments.<br>
+                • Chemistry: Elements, Compounds, Chemical Reactions, Acids & Bases with real-life examples.<br>
+                • Biology: Human body systems, Plants & Animals, Cells, Nutrition.<br>
+                • Class-wise summary available for better understanding (Class 6–10).<br>
+                • Helps in school homework, tests, and Olympiad practice.
+              </p>`;
+              break;
+            case 3:
+              moreInfo = `
+              <strong>Math Practice</strong><br>
+              <p>
+                • Arithmetic: Fractions, Decimals, Percentage, Profit & Loss.<br>
+                • Algebra: Simple equations, Expressions, Linear Equations in One Variable.<br>
+                • Geometry: Angles, Triangles, Perimeter & Area of figures.<br>
+                • Data Handling: Bar Graphs, Pie Charts, Probability basics.<br>
+                • Chapter-wise questions with tricks to solve quickly.
+              </p>`;
+              break;
+            case 4:
+              moreInfo = `
+              <strong>Computer Basics</strong><br>
+              <p>
+                • Introduction to computers: Types, Parts (CPU, Monitor, Keyboard, Mouse).<br>
+                • Operating systems: Windows, macOS basics.<br>
+                • Software vs Hardware, Storage Devices (Hard disk, Pen Drive).<br>
+                • Internet basics: Email, Safe browsing habits, Google search tips.<br>
+                • MS Word, Paint, Notepad basics – typing, saving, and printing documents.
+              </p>`;
+              break;
+            default:
+              moreInfo = 'Details not found.';
+          }
+
+          const item = `<div style="margin-bottom: 15px;">${moreInfo}</div>`;
+          detailsBox.innerHTML += item;
+        }
+
+
+      });
+
+      showTab('details');
+    }
+
+    // Restore session if present
+    document.addEventListener('DOMContentLoaded', () => {
+      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      if (loggedIn) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainSite').style.display = 'block';
+        setRoleUI(getCurrentRole());
+        renderFiles();
+      }
+    });
+  </script>
+</body>
+
+</html>

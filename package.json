@@ -1,0 +1,15 @@
+{
+  "name": "syllabus-checkbox-mern",
+  "version": "1.0.0",
+  "description": "MERN Stack Syllabus Checkbox app",
+  "main": "backend/server.js",
+  "scripts": {
+    "install-all": "npm install --legacy-peer-deps && npm install --prefix backend --legacy-peer-deps && npm install --prefix frontend --legacy-peer-deps",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
