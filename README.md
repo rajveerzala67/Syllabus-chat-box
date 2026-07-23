@@ -1,3 +1,5 @@
+live-link (https://syllabus-chat-box.vercel.app/login)
+
 # 📚 Syllabus Checkbox - MERN Full Stack App
 
 This project is a MERN (MongoDB, Express, React, Node.js) full-stack application. It features a modern React interface styled with custom Glassmorphism components, secure JWT-based authentication, and a MongoDB-connected REST API for real-time progress syncing, syllabus updates, and class file sharing.
@@ -8,32 +10,8 @@ This project is a MERN (MongoDB, Express, React, Node.js) full-stack application
 
 Understanding how a full-stack web application operates is essential. Below are the architectural workflows and request-response cycles that power this application.
 
-### 1. High-Level Architecture Diagram
-This diagram shows how the frontend (client), backend (server), and database (cloud data store) connect and communicate with each other:
 
-```mermaid
-graph TD
-    subgraph Client Layer (Vercel)
-        A[React Router SPA] -->|Renders UI| B(Vite Client App)
-        B -->|Saves JWT Token| C[(Browser LocalStorage)]
-    end
-
-    subgraph Server Layer (Render)
-        D{Express Router} -->|Validates Token| E[Auth Middleware]
-        E -->|Processes API Request| F[API Controllers]
-        F -->|Handles Uploads| G[Multer Storage]
-    end
-
-    subgraph Database Layer (MongoDB Atlas)
-        H[(MongoDB Cloud DB)] <-->|Mongoose Schemas| F
-    end
-
-    B <-->|HTTP REST Requests & JWT| D
-```
-
----
-
-### 2. Checkbox Progress Sync Workflow (Sequence Diagram)
+### 1. Checkbox Progress Sync Workflow (Sequence Diagram)
 When a student checks a topic checkbox (e.g. "Math Practice"), the progress is synchronized to their profile in the database. Here is the step-by-step cycle:
 
 ```mermaid
@@ -57,7 +35,7 @@ sequenceDiagram
 
 ---
 
-### 3. JWT Authentication & Login Flow
+### 2. JWT Authentication & Login Flow
 Here is how secure sessions are established and verified without storing raw passwords:
 
 ```mermaid
