@@ -1,11 +1,17 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { BookOpen, FileText, ClipboardList, Info, Mail, LogOut } from 'lucide-react';
+import { 
+  BookOpen, FileText, ClipboardList, Users, Calendar, BarChart3, 
+  Award, Info, Mail, LogOut 
+} from 'lucide-react';
 
 const Navbar = () => {
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const isTeacher = user && (user.role === 'coordinator' || user.role === 'teacher' || user.role === 'admin');
+  const isStudent = user && user.role === 'student';
 
   const handleSignOut = () => {
     logout();
@@ -23,6 +29,33 @@ const Navbar = () => {
           <BookOpen className="nav-icon" size={18} />
           <span>Home</span>
         </NavLink>
+        
+        {/* Teacher / Coordinator Navigation */}
+        {isTeacher && (
+          <>
+            <NavLink to="/students" className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <Users className="nav-icon" size={18} />
+              <span>Students</span>
+            </NavLink>
+            <NavLink to="/lectures" className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <Calendar className="nav-icon" size={18} />
+              <span>Lectures</span>
+            </NavLink>
+            <NavLink to="/attendance-reports" className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <BarChart3 className="nav-icon" size={18} />
+              <span>Reports</span>
+            </NavLink>
+          </>
+        )}
+
+        {/* Student Navigation */}
+        {isStudent && (
+          <NavLink to="/my-attendance" className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+            <Award className="nav-icon" size={18} />
+            <span>My Attendance</span>
+          </NavLink>
+        )}
+
         <NavLink to="/files" className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
           <FileText className="nav-icon" size={18} />
           <span>Files</span>

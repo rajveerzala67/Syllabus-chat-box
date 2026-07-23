@@ -10,6 +10,7 @@
     "dev": "concurrently \"npm run backend\" \"npm run frontend\""
   },
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "sib-api-v3-sdk": "^8.5.0"
   }
 }

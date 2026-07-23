@@ -56,9 +56,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (username, password, role) => {
+  const register = async (username, email, password, role, passkey) => {
     try {
-      const res = await api.post('/auth/register', { username, password, role });
+      const res = await api.post('/auth/register', { username, email, password, role, passkey });
       setToken(res.data.token);
       setUser(res.data.user);
       return { success: true };
@@ -66,6 +66,57 @@ export const AuthProvider = ({ children }) => {
       return {
         success: false,
         message: err.response?.data?.message || 'Registration failed'
+      };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const res = await api.put('/auth/change-password', { currentPassword, newPassword });
+      setUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to update password'
+      };
+    }
+  };
+
+  const requestOtp = async (email) => {
+    try {
+      const res = await api.post('/auth/forgot-password', { email });
+      return { success: true, data: res.data };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to send OTP email',
+        secondsLeft: err.response?.data?.secondsLeft
+      };
+    }
+  };
+
+  const verifyOtp = async (email, otp) => {
+    try {
+      const res = await api.post('/auth/verify-otp', { email, otp });
+      return { success: true, data: res.data };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to verify OTP',
+        remainingAttempts: err.response?.data?.remainingAttempts
+      };
+    }
+  };
+
+  const resetPassword = async (email, otp, newPassword) => {
+    try {
+      const res = await api.post('/auth/reset-password', { email, otp, newPassword });
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to reset password'
       };
     }
   };
@@ -88,7 +139,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProgress }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      loading, 
+      login, 
+      register, 
+      changePassword,
+      requestOtp, 
+      verifyOtp, 
+      resetPassword, 
+      logout, 
+      updateProgress 
+    }}>
       {children}
     </AuthContext.Provider>
   );

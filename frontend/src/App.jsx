@@ -2,9 +2,15 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import Students from './pages/Students';
+import Lectures from './pages/Lectures';
+import NfcScanner from './pages/NfcScanner';
+import AttendanceReports from './pages/AttendanceReports';
+import StudentAttendance from './pages/StudentAttendance';
 import Files from './pages/Files';
 import SyllabusUpdater from './pages/SyllabusUpdater';
 import About from './pages/About';
@@ -14,6 +20,7 @@ const Layout = ({ children }) => {
   return (
     <div className="app-layout">
       <Navbar />
+      <ChangePasswordModal />
       <div className="main-content">
         {children}
       </div>
@@ -36,6 +43,56 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Home />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/students" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Students />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/lectures" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Lectures />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/nfc-scanner/:sessionId" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <NfcScanner />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/attendance-reports" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AttendanceReports />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/my-attendance" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <StudentAttendance />
                 </Layout>
               </ProtectedRoute>
             } 

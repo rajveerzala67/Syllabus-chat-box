@@ -37,4 +37,12 @@ const requireRole = (role) => {
   };
 };
 
-module.exports = { protect, requireRole };
+const teacherOnly = (req, res, next) => {
+  if (req.user && (req.user.role === 'coordinator' || req.user.role === 'teacher')) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Forbidden: Access restricted to logged-in teachers/coordinators only' });
+  }
+};
+
+module.exports = { protect, requireRole, teacherOnly };

@@ -9,14 +9,28 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  email: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    sparse: true
+  },
   password: {
     type: String,
     required: true
   },
   role: {
     type: String,
-    enum: ['student', 'coordinator'],
+    enum: ['student', 'coordinator', 'teacher', 'admin'],
     default: 'student'
+  },
+  mustChangePassword: {
+    type: Boolean,
+    default: false
+  },
+  studentProfile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student'
   },
   completedTopics: {
     type: [String],
