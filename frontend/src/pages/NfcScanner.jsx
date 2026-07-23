@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
-import { 
+import {
   Smartphone, CheckCircle2, AlertCircle, RefreshCw, X, ShieldAlert,
   Users, Layers, MapPin, Clock, Search, Zap, Radio, Check
 } from 'lucide-react';
@@ -225,7 +225,7 @@ const NfcScanner = () => {
                     <p className="enrollment-tag">{st.enrollmentNumber}</p>
                     <p className="dept-tag">{st.department} (Sem {st.semester}-{st.division})</p>
                     <small className="time-tag">
-                      <Clock size={12} className="mr-4" /> 
+                      <Clock size={12} className="mr-4" />
                       {new Date(record.scannedAt).toLocaleTimeString()}
                     </small>
                   </div>
