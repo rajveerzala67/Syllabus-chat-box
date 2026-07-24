@@ -38,11 +38,19 @@ const requireRole = (role) => {
 };
 
 const teacherOnly = (req, res, next) => {
-  if (req.user && (req.user.role === 'coordinator' || req.user.role === 'teacher')) {
+  if (req.user && (req.user.role === 'teacher' || req.user.role === 'admin')) {
     next();
   } else {
-    res.status(403).json({ message: 'Forbidden: Access restricted to logged-in teachers/coordinators only' });
+    res.status(403).json({ message: 'Forbidden: Access restricted to logged-in teachers only' });
   }
 };
 
-module.exports = { protect, requireRole, teacherOnly };
+const canUploadFiles = (req, res, next) => {
+  if (req.user && (req.user.role === 'coordinator' || req.user.role === 'teacher' || req.user.role === 'admin')) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Forbidden: Access restricted to coordinators and teachers only' });
+  }
+};
+
+module.exports = { protect, requireRole, teacherOnly, canUploadFiles };

@@ -1,5 +1,6 @@
 const Lecture = require('../models/Lecture');
 const AttendanceSession = require('../models/AttendanceSession');
+const Attendance = require('../models/Attendance');
 
 // @desc    Schedule a new lecture
 // @route   POST /api/lectures
@@ -46,11 +47,33 @@ const createLecture = async (req, res) => {
   }
 };
 
+// Utility to auto-delete lectures from past days (midnight cleanup)
+const cleanupExpiredLectures = async () => {
+  try {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const expiredLectures = await Lecture.find({ date: { $lt: startOfToday } });
+    if (expiredLectures.length > 0) {
+      const expiredIds = expiredLectures.map(l => l._id);
+      await Lecture.deleteMany({ _id: { $in: expiredIds } });
+      await AttendanceSession.deleteMany({ lecture: { $in: expiredIds } });
+      // NOTE: Attendance records are kept permanently in DB so student attendance history is never lost!
+      console.log(`🧹 Midnight Auto-Cleanup: Removed ${expiredLectures.length} past lecture schedule(s) from DB (Attendance logs preserved).`);
+    }
+  } catch (err) {
+    console.error('Error in cleanupExpiredLectures:', err);
+  }
+};
+
 // @desc    Get lectures categorized by Today's, Upcoming, and Completed
 // @route   GET /api/lectures
 // @access  Private (Teachers/Coordinators/Students)
 const getLectures = async (req, res) => {
   try {
+    // Run midnight cleanup on get lectures
+    await cleanupExpiredLectures();
+
     const { semester, division } = req.query;
 
     const query = {};
@@ -229,10 +252,36 @@ const closeAttendanceSession = async (req, res) => {
   }
 };
 
+// @desc    Delete a Lecture permanently from DB along with sessions & attendance records
+// @route   DELETE /api/lectures/:id
+// @access  Private (Teachers/Coordinators only)
+const deleteLecture = async (req, res) => {
+  try {
+    const lecture = await Lecture.findById(req.params.id);
+    if (!lecture) {
+      return res.status(404).json({ message: 'Lecture not found.' });
+    }
+
+    // Permanently remove Lecture and Sessions (Keep Attendance records permanently!)
+    await Lecture.findByIdAndDelete(req.params.id);
+    await AttendanceSession.deleteMany({ lecture: req.params.id });
+
+    res.json({
+      success: true,
+      message: 'Lecture schedule deleted. Marked student attendance records are preserved permanently.'
+    });
+  } catch (error) {
+    console.error('Error in deleteLecture:', error);
+    res.status(500).json({ message: error.message || 'Server error deleting lecture' });
+  }
+};
+
 module.exports = {
   createLecture,
   getLectures,
   startAttendanceSession,
   reopenAttendanceWindow,
-  closeAttendanceSession
+  closeAttendanceSession,
+  deleteLecture,
+  cleanupExpiredLectures
 };

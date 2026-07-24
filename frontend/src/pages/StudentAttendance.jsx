@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { api, AuthContext } from '../context/AuthContext';
 import { 
   CheckCircle2, XCircle, Clock, Calendar, BookOpen, Layers, RefreshCw, 
-  Award, FileText, Check, AlertCircle 
+  Award, FileText, Check, AlertCircle, BarChart3, Filter, User
 } from 'lucide-react';
 
 const StudentAttendance = () => {
@@ -10,7 +10,9 @@ const StudentAttendance = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('summary'); // 'summary' or 'history'
+  const [activeTab, setActiveTab] = useState('overall'); // 'overall', 'daywise', 'history'
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
 
   const fetchStudentData = async () => {
     setLoading(true);
@@ -18,7 +20,7 @@ const StudentAttendance = () => {
       const res = await api.get('/attendance/my-attendance');
       setData(res.data);
     } catch (err) {
-      console.error('Error fetching student attendance:', err);
+      console.error('Error fetching student attendance report:', err);
     } finally {
       setLoading(false);
     }
@@ -33,7 +35,7 @@ const StudentAttendance = () => {
       <div className="container student-page-container fade-in">
         <div className="glass-card table-card loading-spinner" style={{ padding: '80px 20px' }}>
           <RefreshCw size={32} className="spinner" />
-          <p>Loading your attendance records...</p>
+          <p>Loading your attendance report...</p>
         </div>
       </div>
     );
@@ -53,6 +55,25 @@ const StudentAttendance = () => {
 
   const { student, overallPercentage, totalLecturesCount, totalPresentCount, subjectBreakdown, lectureHistory } = data;
 
+  // Filter daywise lectures
+  const filteredDaywiseLectures = lectureHistory.filter(lec => {
+    let matchesDate = true;
+    if (selectedDate) {
+      const lecDateStr = new Date(lec.date).toISOString().split('T')[0];
+      matchesDate = lecDateStr === selectedDate;
+    }
+    let matchesSubject = true;
+    if (selectedSubject) {
+      matchesSubject = lec.subject === selectedSubject;
+    }
+    return matchesDate && matchesSubject;
+  });
+
+  // Calculate stats for daywise filtered selection
+  const daywisePresentCount = filteredDaywiseLectures.filter(l => l.status === 'Present').length;
+  const daywiseTotalCount = filteredDaywiseLectures.length;
+  const daywisePercentage = daywiseTotalCount > 0 ? Math.round((daywisePresentCount / daywiseTotalCount) * 100) : 0;
+
   return (
     <div className="container student-page-container fade-in">
 
@@ -60,11 +81,13 @@ const StudentAttendance = () => {
       <div className="glass-card page-header-card">
         <div className="header-left">
           <div className="header-icon-box" style={{ background: '#0284c7' }}>
-            <Award size={32} />
+            <BarChart3 size={32} />
           </div>
           <div>
-            <h2>My Attendance Dashboard</h2>
-            <p className="subtitle">Welcome, {student.fullName} ({student.enrollmentNumber}) | Sem {student.semester}-{student.division}</p>
+            <h2>Student Attendance Report</h2>
+            <p className="subtitle">
+              Welcome, {student.fullName} ({student.enrollmentNumber}) | Department of {student.department} | Sem {student.semester}-{student.division}
+            </p>
           </div>
         </div>
         <div className="header-right">
@@ -98,7 +121,7 @@ const StudentAttendance = () => {
           <div className="stat-card-left">
             <span className="stat-label">Total Conducted Lectures</span>
             <h3 className="stat-value text-sky">{totalLecturesCount}</h3>
-            <p className="stat-sub">Semester {student.semester} Lectures</p>
+            <p className="stat-sub">Semester {student.semester} Lectures (Done by Teacher)</p>
           </div>
           <div className="stat-icon-box">
             <BookOpen size={28} />
@@ -110,7 +133,7 @@ const StudentAttendance = () => {
           <div className="stat-card-left">
             <span className="stat-label">Attended Lectures</span>
             <h3 className="stat-value text-green">{totalPresentCount}</h3>
-            <p className="stat-sub">Total NFC Scans Recorded</p>
+            <p className="stat-sub">Total Marked Present by Teacher</p>
           </div>
           <div className="stat-icon-box green">
             <CheckCircle2 size={28} />
@@ -120,32 +143,78 @@ const StudentAttendance = () => {
       </div>
 
       {/* TABS BAR */}
-      <div className="glass-card controls-card">
-        <div className="tabs-group" style={{ display: 'flex', gap: '12px' }}>
+      <div className="glass-card controls-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        <div className="tabs-group" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
           <button 
-            className={`tab-btn ${activeTab === 'summary' ? 'active' : ''}`}
-            onClick={() => setActiveTab('summary')}
+            className={`lecture-tab-btn overall ${activeTab === 'overall' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overall')}
           >
-            Subject-Wise Breakdown
+            <BarChart3 size={17} />
+            <span>Overall & Subject Breakdown</span>
+            <span className="tab-badge-pill">{subjectBreakdown.length}</span>
           </button>
+          
           <button 
-            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+            className={`lecture-tab-btn daywise ${activeTab === 'daywise' ? 'active' : ''}`}
+            onClick={() => setActiveTab('daywise')}
+          >
+            <Calendar size={17} />
+            <span>Daywise Attendance</span>
+            <span className="tab-badge-pill">{filteredDaywiseLectures.length}</span>
+          </button>
+          
+          <button 
+            className={`lecture-tab-btn history ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
-            Lecture History ({lectureHistory.length})
+            <Clock size={17} />
+            <span>All History</span>
+            <span className="tab-badge-pill">{lectureHistory.length}</span>
           </button>
         </div>
+
+        {activeTab === 'daywise' && (
+          <div className="filters-group" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <label style={{ fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Calendar size={14} /> Filter Date:
+            </label>
+            <input 
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="sky-input"
+              style={{ width: '160px', padding: '6px 10px', fontSize: '13px' }}
+            />
+            {selectedDate && (
+              <button 
+                className="outline-btn"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+                onClick={() => setSelectedDate('')}
+              >
+                Clear Date
+              </button>
+            )}
+            <button 
+              className="outline-btn"
+              style={{ padding: '6px 12px', fontSize: '12px' }}
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+            >
+              Today
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CONTENT CARD */}
       <div className="glass-card table-card">
         
-        {activeTab === 'summary' && (
+        {/* OVERALL & SUBJECT BREAKDOWN TAB */}
+        {activeTab === 'overall' && (
           <div className="subject-breakdown-container">
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>Subject Wise Attendance Statistics</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>Subject-Wise Attendance Overview</h3>
             
             {subjectBreakdown.length === 0 ? (
-              <p style={{ color: '#94a3b8' }}>No subject data recorded yet.</p>
+              <p style={{ color: '#94a3b8' }}>No subject attendance data recorded yet.</p>
             ) : (
               <div className="subject-cards-grid">
                 {subjectBreakdown.map((sb, idx) => (
@@ -174,8 +243,85 @@ const StudentAttendance = () => {
           </div>
         )}
 
+        {/* DAYWISE ATTENDANCE TAB */}
+        {activeTab === 'daywise' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700 }}>
+                  Daywise Attendance Breakdown
+                </h3>
+                <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
+                  {selectedDate 
+                    ? `Showing attendance for ${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
+                    : 'Showing all daywise lecture sessions marked by teachers'}
+                </p>
+              </div>
+
+              {selectedDate && (
+                <div className="user-badge" style={{ padding: '6px 14px', borderRadius: '20px', background: 'rgba(2, 132, 199, 0.15)', border: '1px solid rgba(2, 132, 199, 0.3)' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#38bdf8' }}>
+                    Daywise Score: {daywisePresentCount} / {daywiseTotalCount} ({daywisePercentage}%)
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {filteredDaywiseLectures.length === 0 ? (
+              <div className="no-files-msg" style={{ padding: '60px 20px' }}>
+                <Calendar size={48} style={{ opacity: 0.3, marginBottom: '14px' }} />
+                <h4>No Lectures Recorded for Selected Date</h4>
+                <p>Try selecting a different date or clear the date filter.</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="sky-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th>Lecture Time</th>
+                      <th>Classroom</th>
+                      <th>Teacher</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDaywiseLectures.map((lec) => (
+                      <tr key={lec._id}>
+                        <td>
+                          <strong>{new Date(lec.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                        </td>
+                        <td><strong>{lec.subject}</strong></td>
+                        <td>{lec.startTime} - {lec.endTime}</td>
+                        <td>{lec.room}</td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#e2e8f0', fontSize: '13px' }}>
+                            <User size={13} style={{ color: '#38bdf8' }} /> {lec.teacherName || 'Teacher'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${lec.status === 'Present' ? 'present' : 'absent'}`}>
+                            {lec.status === 'Present' ? (
+                              <><CheckCircle2 size={13} className="mr-4" /> Present</>
+                            ) : (
+                              <><XCircle size={13} className="mr-4" /> Absent</>
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ALL HISTORY TAB */}
         {activeTab === 'history' && (
           <div className="table-responsive">
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>All Lecture History Log</h3>
             <table className="sky-table">
               <thead>
                 <tr>
@@ -183,6 +329,7 @@ const StudentAttendance = () => {
                   <th>Date</th>
                   <th>Time</th>
                   <th>Room</th>
+                  <th>Teacher</th>
                   <th>Attendance Status</th>
                 </tr>
               </thead>
@@ -193,6 +340,11 @@ const StudentAttendance = () => {
                     <td>{new Date(lec.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
                     <td>{lec.startTime} - {lec.endTime}</td>
                     <td>{lec.room}</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#e2e8f0', fontSize: '13px' }}>
+                        <User size={13} style={{ color: '#38bdf8' }} /> {lec.teacherName || 'Teacher'}
+                      </span>
+                    </td>
                     <td>
                       <span className={`status-badge ${lec.status === 'Present' ? 'present' : 'absent'}`}>
                         {lec.status === 'Present' ? (

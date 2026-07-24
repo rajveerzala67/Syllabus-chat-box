@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
 
 // Middleware
 app.use(cors({
-  origin: '*', // For development flexibility
+  origin: true, // Dynamically mirror requesting origin for mobile compatibility
   credentials: true
 }));
 app.use(express.json());
@@ -78,6 +78,16 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server & Socket.IO running on port ${PORT}`);
+const { cleanupExpiredLectures } = require('./controllers/lectureController');
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server & Socket.IO running on 0.0.0.0:${PORT}`);
+  
+  // Run initial cleanup of past day lectures
+  cleanupExpiredLectures();
+
+  // Periodic cleanup check every 1 hour (auto-deletes past day lectures after 12:00 AM)
+  setInterval(() => {
+    cleanupExpiredLectures();
+  }, 60 * 60 * 1000);
 });

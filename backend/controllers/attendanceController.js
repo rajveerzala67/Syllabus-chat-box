@@ -36,16 +36,25 @@ const scanNfcCard = async (req, res) => {
       return res.status(400).json({ message: 'Attendance Window Closed.' });
     }
 
-    // 3. Search Student by NFC Tag Number or Enrollment Number
+    // 3. Robust Search Student by Enrollment Number, NFC Tag Number, or Cleaned String
+    const rawTag = cleanNfc.replace(/^[^\w]+(en|es|fr|de)?/i, '').trim();
+    const tagUpper = rawTag.toUpperCase();
+    const tagNfcFormat = tagUpper.startsWith('NFC-') ? tagUpper : `NFC-${tagUpper}`;
+
     const student = await Student.findOne({
       $or: [
-        { nfcTagNumber: cleanNfc },
-        { enrollmentNumber: cleanNfc.toUpperCase() }
+        { enrollmentNumber: rawTag },
+        { enrollmentNumber: tagUpper },
+        { nfcTagNumber: rawTag },
+        { nfcTagNumber: tagUpper },
+        { nfcTagNumber: tagNfcFormat },
+        { enrollmentNumber: new RegExp(`^${rawTag}$`, 'i') },
+        { nfcTagNumber: new RegExp(`^${rawTag}$`, 'i') }
       ]
     });
 
     if (!student) {
-      return res.status(404).json({ message: 'Invalid NFC Card. Card is not registered.' });
+      return res.status(404).json({ message: `NFC Card (${rawTag}) is not registered to any student.` });
     }
 
     // 4. Verify Semester & Division Match
@@ -54,7 +63,7 @@ const scanNfcCard = async (req, res) => {
       student.division.trim().toUpperCase() !== session.division.trim().toUpperCase()
     ) {
       return res.status(400).json({
-        message: `Student belongs to Division ${student.division} (Semester ${student.semester}), not Division ${session.division}!`
+        message: `Student ${student.fullName} is in Sem ${student.semester} (Div ${student.division}), but this session is for Sem ${session.semester} (Div ${session.division})!`
       });
     }
 
@@ -70,7 +79,7 @@ const scanNfcCard = async (req, res) => {
       });
     }
 
-    // 6. Create Attendance Record in MongoDB
+    // 6. Create Attendance Record in MongoDB with Permanent Details Snapshot
     const attendance = await Attendance.create({
       session: session._id,
       lecture: session.lecture._id || session.lecture,
@@ -79,7 +88,13 @@ const scanNfcCard = async (req, res) => {
       semester: student.semester,
       division: student.division,
       scannedAt: now,
-      status: 'Present'
+      status: 'Present',
+      subject: session.subject || '',
+      room: session.room || '',
+      startTime: session.startTime || '',
+      endTime: session.endTime || '',
+      lectureDate: session.date || now,
+      teacherName: req.user ? (req.user.username || 'Teacher') : 'Teacher'
     });
 
     // Formatted payload for real-time Socket.IO & HTTP response
@@ -211,26 +226,64 @@ const getStudentAttendanceDashboard = async (req, res) => {
   try {
     // Find Student profile linked to logged in user
     let student = await Student.findOne({ userId: req.user._id });
+    
     if (!student && req.user.email) {
       student = await Student.findOne({ email: req.user.email.toLowerCase().trim() });
     }
 
-    if (!student) {
-      return res.status(404).json({ message: 'Student profile not linked to your user account.' });
+    if (!student && req.user.username) {
+      const uName = req.user.username.toLowerCase().trim();
+      const uRegex = new RegExp(uName, 'i');
+      student = await Student.findOne({
+        $or: [
+          { email: uName },
+          { enrollmentNumber: uName.toUpperCase() },
+          { nfcTagNumber: uName },
+          { fullName: uRegex }
+        ]
+      });
     }
+
+    // Fallback: If no direct match, check for unlinked student profile in DB
+    if (!student) {
+      student = await Student.findOne({
+        $or: [
+          { userId: { $exists: false } },
+          { userId: null }
+        ]
+      }).sort({ createdAt: -1 });
+    }
+
+    // Auto-link profile if student found
+    if (student && (!student.userId || student.userId.toString() !== req.user._id.toString())) {
+      student.userId = req.user._id;
+      await student.save();
+    }
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student profile not linked to your user account. Please ask teacher to register your student profile.' });
+    }
+
+    // Flexible Semester & Division regex matching
+    const semVal = student.semester ? student.semester.toString().trim() : '5';
+    const divVal = student.division ? student.division.toString().trim() : 'A';
 
     // Total lectures for student's semester & division
     const totalLectures = await Lecture.find({
-      semester: student.semester,
-      division: student.division
-    }).sort({ date: -1 });
+      semester: { $in: [semVal, parseInt(semVal) || 5, semVal.toString()] },
+      division: new RegExp(`^${divVal}$`, 'i')
+    }).populate('createdBy', 'username email').sort({ date: -1 });
 
     // Student's present attendance records
     const presentRecords = await Attendance.find({
       student: student._id
     }).populate('lecture').populate('session').sort({ scannedAt: -1 });
 
-    const presentLectureIds = new Set(presentRecords.map(r => r.lecture ? r.lecture._id.toString() : ''));
+    const presentLectureIds = new Set(
+      presentRecords
+        .map(r => r.lecture ? r.lecture._id.toString() : (r.session ? r.session.toString() : ''))
+        .filter(Boolean)
+    );
 
     // Subject-wise percentage calculation
     const subjectStats = {};
@@ -254,22 +307,44 @@ const getStudentAttendanceDashboard = async (req, res) => {
     const totalLecturesCount = totalLectures.length;
     const totalPresentCount = presentRecords.length;
     const overallPercentage = totalLecturesCount > 0 
-      ? Math.round((totalPresentCount / totalLecturesCount) * 100) 
+      ? Math.min(100, Math.round((totalPresentCount / totalLecturesCount) * 100))
       : 100;
 
-    // Monthly present/absent log
-    const lectureHistory = totalLectures.map(lec => {
+    // Build combined history including permanent present records for deleted/past lectures
+    const historyMap = new Map();
+
+    totalLectures.forEach(lec => {
       const isPresent = presentLectureIds.has(lec._id.toString());
-      return {
+      historyMap.set(lec._id.toString(), {
         _id: lec._id,
         subject: lec.subject,
         date: lec.date,
         startTime: lec.startTime,
         endTime: lec.endTime,
         room: lec.room,
+        teacherName: lec.createdBy ? lec.createdBy.username : 'Teacher',
         status: isPresent ? 'Present' : 'Absent'
-      };
+      });
     });
+
+    // Add permanent attendance records (even if lecture schedule was deleted or auto-cleared)
+    presentRecords.forEach(rec => {
+      const key = rec.lecture ? rec.lecture._id.toString() : rec._id.toString();
+      if (!historyMap.has(key)) {
+        historyMap.set(key, {
+          _id: rec._id,
+          subject: rec.subject || (rec.lecture ? rec.lecture.subject : 'Class Lecture'),
+          date: rec.lectureDate || rec.scannedAt,
+          startTime: rec.startTime || (rec.lecture ? rec.lecture.startTime : 'Session'),
+          endTime: rec.endTime || (rec.lecture ? rec.lecture.endTime : ''),
+          room: rec.room || (rec.lecture ? rec.lecture.room : 'Lab'),
+          teacherName: rec.teacherName || 'Teacher',
+          status: 'Present'
+        });
+      }
+    });
+
+    const lectureHistory = Array.from(historyMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json({
       success: true,

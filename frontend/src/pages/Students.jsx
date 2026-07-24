@@ -63,9 +63,11 @@ const Students = () => {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  // Notifications
+  // Notifications & Form Feedback
   const [toast, setToast] = useState({ show: false, type: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(null);
+  const [formError, setFormError] = useState('');
 
   // Fetch Students
   const fetchStudents = async () => {
@@ -127,6 +129,8 @@ const Students = () => {
   const handleOpenAddModal = () => {
     setModalMode('add');
     setSelectedStudent(null);
+    setFormSuccess(null);
+    setFormError('');
     setFormData({
       enrollmentNumber: '',
       fullName: '',
@@ -150,6 +154,8 @@ const Students = () => {
   const handleOpenEditModal = (student) => {
     setModalMode('edit');
     setSelectedStudent(student);
+    setFormSuccess(null);
+    setFormError('');
     setFormData({
       enrollmentNumber: student.enrollmentNumber || '',
       fullName: student.fullName || '',
@@ -174,11 +180,15 @@ const Students = () => {
     e.preventDefault();
 
     if (modalMode === 'add' && !photoFile) {
+      setFormError('Please select a passport size photo.');
       showToast('error', 'Please select a passport size photo.');
       return;
     }
 
     setSubmitting(true);
+    setFormError('');
+    setFormSuccess(null);
+
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       data.append(key, formData[key]);
@@ -193,19 +203,26 @@ const Students = () => {
         const res = await api.post('/students', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        showToast('success', res.data.message || 'Student added successfully!');
+        setFormSuccess({
+          message: res.data.message || 'Student profile & user account created successfully!',
+          credentials: res.data.credentials,
+          student: res.data.student
+        });
+        showToast('success', 'Student added successfully!');
+        fetchStudents();
       } else {
         const res = await api.put(`/students/${selectedStudent._id}`, data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         showToast('success', res.data.message || 'Student updated successfully!');
+        setShowModal(false);
+        fetchStudents();
       }
-
-      setShowModal(false);
-      fetchStudents();
     } catch (err) {
       console.error('Submit error:', err);
-      showToast('error', err.response?.data?.message || 'Operation failed. Please try again.');
+      const errText = err.response?.data?.message || 'Operation failed. Please try again.';
+      setFormError(errText);
+      showToast('error', errText);
     } finally {
       setSubmitting(false);
     }
@@ -433,221 +450,289 @@ const Students = () => {
               <p>Fill out all student details & upload Cloudinary passport photo</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="student-modal-form-container">
-              <div className="student-form-grid">
-              
-              {/* Enrollment & NFC Tag */}
-              <div className="sky-input-group">
-                <label>Enrollment Number (Unique) *</label>
-                <input
-                  type="text"
-                  name="enrollmentNumber"
-                  className="sky-input"
-                  placeholder="e.g. 210010116001"
-                  value={formData.enrollmentNumber}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+            {formSuccess ? (
+              <div className="form-success-container fade-in" style={{ padding: '24px 20px', textAlign: 'center' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'rgba(16, 185, 129, 0.2)',
+                  border: '2px solid #10b981',
+                  color: '#34d399',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto'
+                }}>
+                  <CheckCircle2 size={32} />
+                </div>
 
-              <div className="sky-input-group">
-                <label>NFC Tag Number (Unique) *</label>
-                <input
-                  type="text"
-                  name="nfcTagNumber"
-                  className="sky-input"
-                  placeholder="e.g. NFC-8849-2025"
-                  value={formData.nfcTagNumber}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                <h3 style={{ fontSize: '22px', color: '#34d399', fontWeight: 800, marginBottom: '6px' }}>
+                  Student Added Successfully!
+                </h3>
+                <p style={{ color: '#e2e8f0', fontSize: '14px', marginBottom: '20px' }}>
+                  {formSuccess.message}
+                </p>
 
-              {/* Full Name & Email */}
-              <div className="sky-input-group">
-                <label>Full Name *</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  className="sky-input"
-                  placeholder="e.g. Rajveersinh Zala"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="sky-input-group">
-                <label>Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  className="sky-input"
-                  placeholder="e.g. rajveer@example.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              {/* Mobile Number & Academic Year */}
-              <div className="sky-input-group">
-                <label>Mobile Number *</label>
-                <input
-                  type="tel"
-                  name="mobileNumber"
-                  className="sky-input"
-                  placeholder="e.g. 9876543210"
-                  value={formData.mobileNumber}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="sky-input-group">
-                <label>Academic Year *</label>
-                <input
-                  type="text"
-                  name="academicYear"
-                  className="sky-input"
-                  placeholder="e.g. 2025-2026"
-                  value={formData.academicYear}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              {/* Department, Semester, Division */}
-              <div className="sky-input-group">
-                <label>Department *</label>
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  className="sky-select"
-                  required
-                >
-                  {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              <div className="sky-input-group">
-                <label>Semester *</label>
-                <select
-                  name="semester"
-                  value={formData.semester}
-                  onChange={handleInputChange}
-                  className="sky-select"
-                  required
-                >
-                  {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
-                </select>
-              </div>
-
-              <div className="sky-input-group">
-                <label>Division *</label>
-                <select
-                  name="division"
-                  value={formData.division}
-                  onChange={handleInputChange}
-                  className="sky-select"
-                  required
-                >
-                  {DIVISIONS.map(v => <option key={v} value={v}>Division {v}</option>)}
-                </select>
-              </div>
-
-              {/* Gender & Date of Birth */}
-              <div className="sky-input-group">
-                <label>Gender *</label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  className="sky-select"
-                  required
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="sky-input-group">
-                <label>Date of Birth *</label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  className="sky-input"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              {/* Address */}
-              <div className="sky-input-group full-width">
-                <label>Address *</label>
-                <input
-                  type="text"
-                  name="address"
-                  className="sky-input"
-                  placeholder="Enter full address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              {/* Photo Upload Input & Preview */}
-              <div className="sky-input-group full-width">
-                <label>Passport Size Photo (Cloudinary Upload, Max 5MB) *</label>
-                <div className="photo-upload-box">
-                  <div className="upload-input-area">
-                    <UploadCloud size={24} className="upload-icon" />
-                    <input 
-                      type="file" 
-                      accept="image/jpeg,image/png,image/jpg,image/webp" 
-                      onChange={handleFileChange}
-                    />
-                    <span>Click or drag image file here</span>
-                    <small>Allowed formats: JPG, PNG, WEBP (Max 5MB)</small>
-                  </div>
-                  {photoPreview && (
-                    <div className="photo-preview-box">
-                      <img src={photoPreview} alt="Passport Preview" />
-                      <span className="preview-tag">Photo Selected</span>
+                {formSuccess.credentials && (
+                  <div style={{
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    padding: '16px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    textAlign: 'left',
+                    maxWidth: '460px',
+                    margin: '0 auto 24px auto',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+                  }}>
+                    <span style={{ fontSize: '12px', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.5px', display: 'block', marginBottom: '10px' }}>
+                      🔑 Student Login Credentials
+                    </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                      <span style={{ color: '#94a3b8' }}>Username / Email:</span>
+                      <strong style={{ color: '#ffffff' }}>{formSuccess.credentials.email}</strong>
                     </div>
-                  )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                      <span style={{ color: '#94a3b8' }}>Temp Password:</span>
+                      <strong style={{ color: '#34d399', fontFamily: 'monospace', fontSize: '15px' }}>{formSuccess.credentials.tempPassword}</strong>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
+                  <button className="outline-btn" onClick={handleOpenAddModal}>
+                    + Add Another Student
+                  </button>
+                  <button className="sky-primary-btn size-auto" onClick={() => setShowModal(false)}>
+                    Done & Close Form
+                  </button>
                 </div>
               </div>
-            </div> {/* End student-form-grid */}
+            ) : (
+              <form onSubmit={handleSubmit} className="student-modal-form-container">
+                {formError && (
+                  <div className="error-alert" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={18} />
+                    <span>{formError}</span>
+                  </div>
+                )}
+                
+                <div className="student-form-grid">
+                
+                {/* Enrollment & NFC Tag */}
+                <div className="sky-input-group">
+                  <label>Enrollment Number (Unique) *</label>
+                  <input
+                    type="text"
+                    name="enrollmentNumber"
+                    className="sky-input"
+                    placeholder="e.g. 210010116001"
+                    value={formData.enrollmentNumber}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
 
-            <div className="form-submit-actions">
-                <button 
-                  type="button" 
-                  className="modal-cancel-btn"
-                  onClick={() => setShowModal(false)}
-                >
-                  <X size={16} /> Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="sky-primary-btn size-auto"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <>
-                      <RefreshCw size={16} className="spinner mr-6" />
-                      {modalMode === 'add' ? 'Uploading & Saving...' : 'Updating...'}
-                    </>
-                  ) : (
-                    modalMode === 'add' ? 'Save Student' : 'Update Record'
-                  )}
-                </button>
-              </div>
+                <div className="sky-input-group">
+                  <label>NFC Tag Number (Unique) *</label>
+                  <input
+                    type="text"
+                    name="nfcTagNumber"
+                    className="sky-input"
+                    placeholder="e.g. NFC-8849-2025"
+                    value={formData.nfcTagNumber}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
 
-            </form>
+                {/* Full Name & Email */}
+                <div className="sky-input-group">
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    className="sky-input"
+                    placeholder="e.g. Rajveersinh Zala"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="sky-input-group">
+                  <label>Email Address (Unique) *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="sky-input"
+                    placeholder="e.g. rajveer@gmail.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                {/* Mobile Number & Academic Year */}
+                <div className="sky-input-group">
+                  <label>Mobile Number *</label>
+                  <input
+                    type="text"
+                    name="mobileNumber"
+                    className="sky-input"
+                    placeholder="e.g. 9876543210"
+                    value={formData.mobileNumber}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="sky-input-group">
+                  <label>Academic Year *</label>
+                  <input
+                    type="text"
+                    name="academicYear"
+                    className="sky-input"
+                    placeholder="e.g. 2025-2026"
+                    value={formData.academicYear}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                {/* Department & Semester */}
+                <div className="sky-input-group">
+                  <label>Department *</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    className="sky-select"
+                    required
+                  >
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div className="sky-input-group">
+                  <label>Semester *</label>
+                  <select
+                    name="semester"
+                    value={formData.semester}
+                    onChange={handleInputChange}
+                    className="sky-select"
+                    required
+                  >
+                    {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
+                  </select>
+                </div>
+
+                {/* Division */}
+                <div className="sky-input-group full-width">
+                  <label>Division *</label>
+                  <select
+                    name="division"
+                    value={formData.division}
+                    onChange={handleInputChange}
+                    className="sky-select"
+                    required
+                  >
+                    {DIVISIONS.map(v => <option key={v} value={v}>Division {v}</option>)}
+                  </select>
+                </div>
+
+                {/* Gender & Date of Birth */}
+                <div className="sky-input-group">
+                  <label>Gender *</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="sky-select"
+                    required
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="sky-input-group">
+                  <label>Date of Birth *</label>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    className="sky-input"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="sky-input-group full-width">
+                  <label>Address *</label>
+                  <input
+                    type="text"
+                    name="address"
+                    className="sky-input"
+                    placeholder="Enter full address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                {/* Photo Upload Input & Preview */}
+                <div className="sky-input-group full-width">
+                  <label>Passport Size Photo (Cloudinary Upload, Max 5MB) *</label>
+                  <div className="photo-upload-box">
+                    <div className="upload-input-area">
+                      <UploadCloud size={24} className="upload-icon" />
+                      <input 
+                        type="file" 
+                        accept="image/jpeg,image/png,image/jpg,image/webp" 
+                        onChange={handleFileChange}
+                      />
+                      <span>Click or drag image file here</span>
+                      <small>Allowed formats: JPG, PNG, WEBP (Max 5MB)</small>
+                    </div>
+                    {photoPreview && (
+                      <div className="photo-preview-box">
+                        <img src={photoPreview} alt="Passport Preview" />
+                        <span className="preview-tag">Photo Selected</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div> {/* End student-form-grid */}
+
+              <div className="form-submit-actions">
+                  <button 
+                    type="button" 
+                    className="modal-cancel-btn"
+                    onClick={() => setShowModal(false)}
+                  >
+                    <X size={16} /> Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="sky-primary-btn size-auto"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <RefreshCw size={16} className="spinner mr-6" />
+                        {modalMode === 'add' ? 'Uploading & Saving...' : 'Updating...'}
+                      </>
+                    ) : (
+                      modalMode === 'add' ? 'Save Student' : 'Update Record'
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            )}
           </div>
         </div>
       )}

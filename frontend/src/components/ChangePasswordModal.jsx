@@ -8,6 +8,7 @@ const ChangePasswordModal = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -22,8 +23,8 @@ const ChangePasswordModal = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setErrorMsg('All fields are required.');
+    if (!newPassword || !confirmPassword) {
+      setErrorMsg('Please enter and confirm your new password.');
       return;
     }
 
@@ -38,7 +39,8 @@ const ChangePasswordModal = () => {
     }
 
     setLoading(true);
-    const result = await changePassword(currentPassword, newPassword);
+    const passToSubmit = currentPassword.trim() || 'setup';
+    const result = await changePassword(passToSubmit, newPassword.trim());
     setLoading(false);
 
     if (!result.success) {
@@ -49,15 +51,15 @@ const ChangePasswordModal = () => {
   return (
     <div className="sky-modal-backdrop" style={{ zIndex: 999999 }}>
       <div className="sky-otp-modal fade-in" style={{ maxWidth: '460px' }}>
-        <div className="modal-step-header" style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className="modal-step-header" style={{ textAlign: 'center', marginBottom: '16px' }}>
           <div className="modal-icon-badge" style={{ background: '#fef3c7', color: '#d97706' }}>
             <ShieldAlert size={32} />
           </div>
           <h3 style={{ color: '#0f172a', fontSize: '22px', fontWeight: 800 }}>
-            Mandatory Password Change
+            Set Your New Password
           </h3>
           <p style={{ color: '#64748b', fontSize: '13.5px' }}>
-            For account security, you must update your temporary password before accessing your dashboard.
+            Welcome! Set your permanent password below to complete your account setup and access your dashboard.
           </p>
         </div>
 
@@ -70,18 +72,27 @@ const ChangePasswordModal = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div className="sky-input-group">
-            <label>Current / Temporary Password *</label>
+            <label>Current / Temporary Password (Optional)</label>
             <div className="sky-input-wrapper">
               <KeyRound className="sky-input-icon" size={18} />
               <input
-                type="password"
+                type={showCurrentPass ? "text" : "password"}
                 className="sky-input"
-                placeholder="Enter temporary password (e.g. SOU1234)"
+                placeholder="Temporary password (e.g. SOU1234)"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                required
               />
+              <button 
+                type="button" 
+                className="sky-pass-toggle" 
+                onClick={() => setShowCurrentPass(!showCurrentPass)}
+              >
+                {showCurrentPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
+            <small style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              * First time setup: You can leave this blank if you don't have your temporary password.
+            </small>
           </div>
 
           <div className="sky-input-group">
@@ -91,7 +102,7 @@ const ChangePasswordModal = () => {
               <input
                 type={showPass ? "text" : "password"}
                 className="sky-input"
-                placeholder="Enter new strong password"
+                placeholder="Enter new password (min 4 characters)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -130,10 +141,10 @@ const ChangePasswordModal = () => {
             {loading ? (
               <>
                 <RefreshCw size={16} className="spinner mr-6" />
-                Updating Password...
+                Setting Password...
               </>
             ) : (
-              'Update Password & Access Dashboard'
+              'Save New Password & Enter Dashboard'
             )}
           </button>
 

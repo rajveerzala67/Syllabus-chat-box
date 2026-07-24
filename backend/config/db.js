@@ -2,27 +2,26 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const connectDB = async () => {
-  const primaryUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/syllabus-db';
+  const primaryUri = process.env.MONGO_URI;
   const fallbackUri = 'mongodb://127.0.0.1:27017/syllabus-db';
 
-  try {
-    const conn = await mongoose.connect(primaryUri);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    await seedUsers();
-  } catch (error) {
-    console.error(`Primary Database Connection Warning: ${error.message}`);
-    if (primaryUri !== fallbackUri) {
-      try {
-        console.log(`Attempting fallback local MongoDB connection: ${fallbackUri}...`);
-        const conn = await mongoose.connect(fallbackUri);
-        console.log(`MongoDB Connected (Fallback): ${conn.connection.host}`);
-        await seedUsers();
-        return;
-      } catch (fallbackErr) {
-        console.error(`Fallback Database Connection Error: ${fallbackErr.message}`);
-      }
+  if (primaryUri) {
+    try {
+      const conn = await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 3000 });
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+      await seedUsers();
+      return;
+    } catch (error) {
+      console.warn(`Primary Database Connection Warning (${error.message}). Switching to local fallback database...`);
     }
-    console.error('Server running in standalone mode (Database connection failed). Server will remain active.');
+  }
+
+  try {
+    const conn = await mongoose.connect(fallbackUri, { serverSelectionTimeoutMS: 3000 });
+    console.log(`MongoDB Connected (Fallback): ${conn.connection.host}`);
+    await seedUsers();
+  } catch (fallbackErr) {
+    console.error(`Fallback Database Connection Error: ${fallbackErr.message}`);
   }
 };
 

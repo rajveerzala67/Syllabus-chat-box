@@ -2,8 +2,8 @@ import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children }) => {
-  const { token, loading } = useContext(AuthContext);
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, token, loading } = useContext(AuthContext);
 
   if (loading) {
     return (
@@ -23,6 +23,17 @@ const ProtectedRoute = ({ children }) => {
 
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    // Redirect based on role if trying to access unauthorized route
+    if (user.role === 'student' || user.role === 'coordinator') {
+      return <Navigate to="/report" replace />;
+    }
+    if (user.role === 'teacher' || user.role === 'admin') {
+      return <Navigate to="/students" replace />;
+    }
+    return <Navigate to="/" replace />;
   }
 
   return children;

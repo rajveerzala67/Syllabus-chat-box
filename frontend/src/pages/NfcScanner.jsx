@@ -29,7 +29,7 @@ const NfcScanner = () => {
 
   const showAlert = (type, title, message, student = null) => {
     setAlert({ show: true, type, title, message, student });
-    setTimeout(() => setAlert({ show: false, type: '', title: '', message: '', student: null }), 4500);
+    setTimeout(() => setAlert({ show: false, type: '', title: '', message: '', student: null }), 2000);
   };
 
   // Fetch session details & previous scans
@@ -54,7 +54,7 @@ const NfcScanner = () => {
     }
 
     // Connect Socket.IO client for live broadcast
-    const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
     const socket = io(socketUrl);
 
     socket.emit('join-session', sessionId);
@@ -81,10 +81,35 @@ const NfcScanner = () => {
       await ndef.scan();
       setIsScanning(true);
 
-      ndef.addEventListener('reading', ({ serialNumber }) => {
-        const nfcTagNumber = serialNumber ? `NFC-${serialNumber.toUpperCase()}` : '';
-        if (nfcTagNumber) {
-          processNfcScan(nfcTagNumber);
+      ndef.addEventListener('reading', ({ serialNumber, message }) => {
+        let scannedTagValue = '';
+
+        // 1. Decode written NDEF Text / URI payload (e.g. Enrollment Number "2301030400068")
+        if (message && message.records && message.records.length > 0) {
+          for (const record of message.records) {
+            try {
+              const textDecoder = new TextDecoder(record.encoding || 'utf-8');
+              const decodedText = textDecoder.decode(record.data).trim();
+              if (decodedText) {
+                // Strip non-printable characters or language codes (e.g. \x02en2301030400068 -> 2301030400068)
+                scannedTagValue = decodedText.replace(/^[^\w]+(en|es|fr|de)?/i, '').trim() || decodedText;
+                if (scannedTagValue) break;
+              }
+            } catch (decErr) {
+              console.warn('NDEF Record decoding warning:', decErr);
+            }
+          }
+        }
+
+        // 2. Fallback to hardware chip Serial Number if no text payload found
+        if (!scannedTagValue && serialNumber) {
+          const cleanSerial = serialNumber.replace(/:/g, '').toUpperCase();
+          scannedTagValue = cleanSerial.startsWith('NFC-') ? cleanSerial : `NFC-${cleanSerial}`;
+        }
+
+        console.log('📱 Web NFC Scanned Payload:', scannedTagValue);
+        if (scannedTagValue) {
+          processNfcScan(scannedTagValue);
         }
       });
     } catch (error) {
@@ -149,21 +174,64 @@ const NfcScanner = () => {
         </div>
       </div>
 
-      {/* ALERT BANNER POPUP */}
+      {/* 2-SECOND ATTENDANCE COMPLETED POPUP MODAL */}
       {alert.show && (
-        <div className={`scan-alert-card ${alert.type} fade-in`}>
-          <div className="alert-badge">
-            {alert.type === 'success' ? <CheckCircle2 size={32} /> : <AlertCircle size={32} />}
-          </div>
-          <div className="alert-content">
-            <h4>{alert.title}</h4>
-            <p>{alert.message}</p>
-          </div>
-          {alert.student && alert.student.photoUrl && (
-            <div className="alert-student-photo">
-              <img src={alert.student.photoUrl} alt={alert.student.fullName} />
+        <div className="sky-modal-backdrop" style={{ zIndex: 999999 }}>
+          <div className="sky-otp-modal fade-in" style={{
+            maxWidth: '420px',
+            width: '90%',
+            padding: '32px 24px',
+            textAlign: 'center',
+            background: alert.type === 'success' 
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%)' 
+              : 'linear-gradient(135deg, rgba(225, 29, 72, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%)',
+            border: alert.type === 'success' ? '2px solid #10b981' : '2px solid #e11d48',
+            borderRadius: '24px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              background: alert.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(225, 29, 72, 0.2)',
+              color: alert.type === 'success' ? '#34d399' : '#f43f5e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              {alert.type === 'success' ? <CheckCircle2 size={42} /> : <AlertCircle size={42} />}
             </div>
-          )}
+
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: alert.type === 'success' ? '#34d399' : '#f43f5e', marginBottom: '6px' }}>
+              {alert.type === 'success' ? 'Attendance Completed!' : alert.title}
+            </h3>
+
+            {alert.student && (
+              <div style={{ margin: '16px 0' }}>
+                {alert.student.photoUrl && (
+                  <img 
+                    src={alert.student.photoUrl} 
+                    alt={alert.student.fullName} 
+                    style={{ width: '84px', height: '84px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #34d399', margin: '0 auto 12px auto', display: 'block' }}
+                  />
+                )}
+                <h4 style={{ fontSize: '19px', color: '#ffffff', fontWeight: 800, margin: '4px 0' }}>{alert.student.fullName}</h4>
+                <span className="enrollment-tag">{alert.student.enrollmentNumber}</span>
+                <p style={{ color: '#94a3b8', fontSize: '13.5px', marginTop: '6px' }}>
+                  {alert.student.department} (Sem {alert.student.semester} - Div {alert.student.division})
+                </p>
+              </div>
+            )}
+
+            <p style={{ color: '#e2e8f0', fontSize: '14px', marginTop: '10px' }}>
+              {alert.message}
+            </p>
+
+            <div style={{ marginTop: '16px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+              ⏱️ Closing in 2s...
+            </div>
+          </div>
         </div>
       )}
 

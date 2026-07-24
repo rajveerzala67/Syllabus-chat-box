@@ -3,9 +3,9 @@ import axios from 'axios';
 
 export const AuthContext = createContext();
 
-// Create default Axios instance
+// Create default Axios instance using relative /api path (proxied by Vite)
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+  baseURL: '/api'
 });
 
 export const AuthProvider = ({ children }) => {

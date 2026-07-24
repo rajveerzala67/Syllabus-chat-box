@@ -6,12 +6,16 @@ const {
   getLectures,
   startAttendanceSession,
   reopenAttendanceWindow,
-  closeAttendanceSession
+  closeAttendanceSession,
+  deleteLecture
 } = require('../controllers/lectureController');
 
 router.route('/')
   .post(protect, teacherOnly, createLecture)
   .get(protect, getLectures);
+
+router.route('/:id')
+  .delete(protect, teacherOnly, deleteLecture);
 
 router.route('/:id/start-session')
   .post(protect, teacherOnly, startAttendanceSession);

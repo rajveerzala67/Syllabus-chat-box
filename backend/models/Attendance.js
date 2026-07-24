@@ -4,13 +4,13 @@ const AttendanceSchema = new mongoose.Schema({
   session: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'AttendanceSession',
-    required: true,
+    required: false,
     index: true
   },
   lecture: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lecture',
-    required: true,
+    required: false,
     index: true
   },
   student: {
@@ -42,6 +42,30 @@ const AttendanceSchema = new mongoose.Schema({
     type: String,
     enum: ['Present', 'Absent'],
     default: 'Present'
+  },
+  subject: {
+    type: String,
+    default: ''
+  },
+  room: {
+    type: String,
+    default: ''
+  },
+  startTime: {
+    type: String,
+    default: ''
+  },
+  endTime: {
+    type: String,
+    default: ''
+  },
+  lectureDate: {
+    type: Date,
+    default: Date.now
+  },
+  teacherName: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

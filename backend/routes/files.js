@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const File = require('../models/File');
-const { protect, requireRole } = require('../middleware/auth');
+const { protect, requireRole, canUploadFiles } = require('../middleware/auth');
 
 // Ensure uploads folder exists
 const uploadDir = path.join(__dirname, '../uploads');
@@ -54,8 +54,8 @@ router.get('/', protect, async (req, res) => {
 
 // @route   POST /api/files/upload
 // @desc    Upload multiple files
-// @access  Private (Coordinator Only)
-router.post('/upload', protect, requireRole('coordinator'), (req, res) => {
+// @access  Private (Coordinator, Teacher, Admin)
+router.post('/upload', protect, canUploadFiles, (req, res) => {
   upload.array('files')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -111,8 +111,8 @@ router.get('/download/:id', protect, async (req, res) => {
 
 // @route   DELETE /api/files/:id
 // @desc    Delete file by ID
-// @access  Private (Coordinator Only)
-router.delete('/:id', protect, requireRole('coordinator'), async (req, res) => {
+// @access  Private (Coordinator, Teacher, Admin)
+router.delete('/:id', protect, canUploadFiles, async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
     if (!file) {

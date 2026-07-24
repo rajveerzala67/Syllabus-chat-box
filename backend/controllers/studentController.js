@@ -67,8 +67,15 @@ const createStudent = async (req, res) => {
     // Auto-generate temporary password (e.g. SOU + 4 random digits like SOU4829)
     const tempPassword = `SOU${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Create student User login account in MongoDB
-    let userAccount = await User.findOne({ username: studentEmail });
+    // Check if a User account already exists for this student by username or email
+    let userAccount = await User.findOne({
+      $or: [
+        { username: studentEmail },
+        { email: studentEmail },
+        { username: formattedEnrollment.toLowerCase() }
+      ]
+    });
+
     if (!userAccount) {
       userAccount = await User.create({
         username: studentEmail,

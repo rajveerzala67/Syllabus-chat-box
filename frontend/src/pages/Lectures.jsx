@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, AuthContext } from '../context/AuthContext';
 import { 
   Calendar, Clock, Plus, Play, RefreshCw, X, CheckCircle2, 
-  AlertCircle, BookOpen, MapPin, Layers, Smartphone, Check, Lock
+  AlertCircle, BookOpen, MapPin, Layers, Smartphone, Check, Lock, Trash2
 } from 'lucide-react';
 
 const DEPARTMENTS = [
@@ -125,12 +125,26 @@ const Lectures = () => {
   // Close Attendance Window
   const handleCloseWindow = async (lectureId) => {
     try {
-      const res = await api.put(`/lectures/${lectureId}/close-session`);
-      showToast('success', res.data.message || 'Attendance session closed.');
+      await api.put(`/lectures/${lectureId}/close-session`);
+      showToast('success', 'Attendance session closed');
       fetchLectures();
     } catch (err) {
       console.error('Close error:', err);
       showToast('error', err.response?.data?.message || 'Failed to close attendance session');
+    }
+  };
+
+  const handleDeleteLecture = async (lectureId, subjectName) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the lecture "${subjectName}"?\n\nThis will remove the lecture and all associated attendance records permanently.`)) {
+      return;
+    }
+    try {
+      await api.delete(`/lectures/${lectureId}`);
+      showToast('success', 'Lecture deleted permanently from database');
+      fetchLectures();
+    } catch (err) {
+      console.error('Delete lecture error:', err);
+      showToast('error', err.response?.data?.message || 'Failed to delete lecture');
     }
   };
 
@@ -143,6 +157,8 @@ const Lectures = () => {
         </div>
       );
     }
+
+    const isTeacher = user && (user.role === 'teacher' || user.role === 'admin');
 
     return (
       <div className="lectures-grid">
@@ -186,42 +202,54 @@ const Lectures = () => {
             </div>
 
             {/* Teacher Actions */}
-            <div className="lecture-card-actions">
-              {lecture.isAttendanceWindowOpen ? (
-                <>
-                  <button 
-                    className="sky-primary-btn size-auto" 
-                    onClick={() => handleStartAttendance(lecture._id)}
-                  >
-                    <Smartphone size={16} className="mr-6" /> Open Scanner
-                  </button>
-                  <button 
-                    className="outline-btn" 
-                    onClick={() => handleCloseWindow(lecture._id)}
-                    style={{ borderColor: '#ef4444', color: '#f87171' }}
-                  >
-                    Close Session
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    className="sky-primary-btn size-auto" 
-                    onClick={() => handleStartAttendance(lecture._id)}
-                  >
-                    <Play size={16} className="mr-6" /> Start Attendance
-                  </button>
-                  {isToday && (
+            {isTeacher && (
+              <div className="lecture-card-actions">
+                {lecture.isAttendanceWindowOpen ? (
+                  <>
+                    <button 
+                      className="sky-primary-btn size-auto" 
+                      onClick={() => handleStartAttendance(lecture._id)}
+                    >
+                      <Smartphone size={16} className="mr-6" /> Open Scanner
+                    </button>
                     <button 
                       className="outline-btn" 
-                      onClick={() => handleReopenWindow(lecture._id)}
+                      onClick={() => handleCloseWindow(lecture._id)}
+                      style={{ borderColor: '#ef4444', color: '#f87171' }}
                     >
-                      <RefreshCw size={14} className="mr-4" /> +10 Mins
+                      Close Session
                     </button>
-                  )}
-                </>
-              )}
-            </div>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      className="sky-primary-btn size-auto" 
+                      onClick={() => handleStartAttendance(lecture._id)}
+                    >
+                      <Play size={16} className="mr-6" /> Start Attendance
+                    </button>
+                    {isToday && (
+                      <button 
+                        className="outline-btn" 
+                        onClick={() => handleReopenWindow(lecture._id)}
+                      >
+                        <RefreshCw size={14} className="mr-4" /> +10 Mins
+                      </button>
+                    )}
+                  </>
+                )}
+
+                <button 
+                  className="outline-btn delete-lecture-btn" 
+                  onClick={() => handleDeleteLecture(lecture._id, lecture.subject)}
+                  title="Delete Lecture Permanently"
+                  style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+                >
+                  <Trash2 size={15} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -259,25 +287,33 @@ const Lectures = () => {
       </div>
 
       {/* Tab Controls Bar */}
-      <div className="glass-card controls-card">
-        <div className="tabs-group" style={{ display: 'flex', gap: '12px' }}>
+      <div className="glass-card controls-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="tabs-group" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
           <button 
-            className={`tab-btn ${activeTab === 'today' ? 'active' : ''}`}
+            className={`lecture-tab-btn today ${activeTab === 'today' ? 'active' : ''}`}
             onClick={() => setActiveTab('today')}
           >
-            Today's Lectures ({todayLectures.length})
+            <Clock size={17} />
+            <span>Today's Lectures</span>
+            <span className="tab-badge-pill">{todayLectures.length}</span>
           </button>
+
           <button 
-            className={`tab-btn ${activeTab === 'upcoming' ? 'active' : ''}`}
+            className={`lecture-tab-btn upcoming ${activeTab === 'upcoming' ? 'active' : ''}`}
             onClick={() => setActiveTab('upcoming')}
           >
-            Upcoming ({upcomingLectures.length})
+            <Calendar size={17} />
+            <span>Upcoming</span>
+            <span className="tab-badge-pill">{upcomingLectures.length}</span>
           </button>
+
           <button 
-            className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
+            className={`lecture-tab-btn completed ${activeTab === 'completed' ? 'active' : ''}`}
             onClick={() => setActiveTab('completed')}
           >
-            Completed ({completedLectures.length})
+            <CheckCircle2 size={17} />
+            <span>Completed</span>
+            <span className="tab-badge-pill">{completedLectures.length}</span>
           </button>
         </div>
 

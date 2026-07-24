@@ -10,7 +10,7 @@ const Files = () => {
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const isCoordinator = user?.role === 'coordinator';
+  const canUpload = user?.role === 'coordinator' || user?.role === 'teacher' || user?.role === 'admin';
 
   const fetchFiles = async () => {
     try {
@@ -114,9 +114,9 @@ const Files = () => {
       <div className="glass-card files-card">
         <h2>📎 Shared Class Files</h2>
 
-        {isCoordinator && (
+        {canUpload && (
           <div className="upload-section glass-card inner-card">
-            <h3>Coordinator Upload</h3>
+            <h3>Upload Class Resource</h3>
             <div className="upload-controls">
               <input
                 type="file"
@@ -185,7 +185,7 @@ const Files = () => {
                         <Download size={18} />
                       </button>
                       
-                      {isCoordinator && (
+                      {canUpload && (
                         <button 
                           onClick={() => handleDelete(file._id)} 
                           className="delete-btn"

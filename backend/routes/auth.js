@@ -411,8 +411,8 @@ router.put('/progress', protect, async (req, res) => {
 router.put('/change-password', protect, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ message: 'Current password and new password are required.' });
+  if (!newPassword) {
+    return res.status(400).json({ message: 'New password is required.' });
   }
 
   if (newPassword.trim().length < 4) {
@@ -425,9 +425,15 @@ router.put('/change-password', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Incorrect current password.' });
+    // Only require current password match if this is NOT a first-login mandatory setup
+    if (!user.mustChangePassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required.' });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Incorrect current password.' });
+      }
     }
 
     user.password = newPassword.trim();

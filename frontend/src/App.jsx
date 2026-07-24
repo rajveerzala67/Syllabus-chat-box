@@ -50,7 +50,7 @@ function App() {
           <Route 
             path="/students" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <Layout>
                   <Students />
                 </Layout>
@@ -60,7 +60,7 @@ function App() {
           <Route 
             path="/lectures" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <Layout>
                   <Lectures />
                 </Layout>
@@ -70,7 +70,7 @@ function App() {
           <Route 
             path="/nfc-scanner/:sessionId" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <Layout>
                   <NfcScanner />
                 </Layout>
@@ -80,7 +80,7 @@ function App() {
           <Route 
             path="/attendance-reports" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <Layout>
                   <AttendanceReports />
                 </Layout>
@@ -88,9 +88,19 @@ function App() {
             } 
           />
           <Route 
+            path="/report" 
+            element={
+              <ProtectedRoute allowedRoles={['student', 'coordinator']}>
+                <Layout>
+                  <StudentAttendance />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/my-attendance" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['student', 'coordinator']}>
                 <Layout>
                   <StudentAttendance />
                 </Layout>
