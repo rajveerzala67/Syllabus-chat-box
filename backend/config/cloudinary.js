@@ -74,13 +74,14 @@ const uploadToCloudinary = (fileBuffer, folder = 'student_photos', mimeType = 'i
     }, 5000);
 
     try {
-      const isClassFile = folder === 'class_files' || mimeType.includes('pdf');
+      const isPdf = mimeType.includes('pdf');
+      const isClassFile = folder === 'class_files' || isPdf;
       const uploadOptions = {
         folder,
-        resource_type: isClassFile ? 'auto' : 'image'
+        resource_type: isPdf ? 'raw' : (folder === 'class_files' ? 'auto' : 'image')
       };
 
-      if (!isClassFile) {
+      if (folder === 'student_photos') {
         uploadOptions.transformation = [
           { width: 600, height: 600, crop: 'fill', gravity: 'face' }
         ];

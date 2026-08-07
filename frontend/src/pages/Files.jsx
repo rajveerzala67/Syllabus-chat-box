@@ -105,33 +105,26 @@ const Files = () => {
         }
       }
 
-      // 2. For Cloudinary files, force native attachment download using fl_attachment transformation flag
-      if (downloadUrl && downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
-        const attachmentUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
-        const link = document.createElement('a');
-        link.href = attachmentUrl;
-        link.target = '_blank';
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+      if (!downloadUrl) {
+        alert('This old file was uploaded before Cloudinary integration and is no longer stored on server disk. Please delete it and upload a new copy.');
         return;
       }
 
-      // 3. For Data URIs or direct HTTP URLs
-      if (downloadUrl && (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://') || downloadUrl.startsWith('data:'))) {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.target = '_blank';
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        return;
+      // 2. Format Cloudinary URL: ONLY apply fl_attachment to image uploads (/image/upload/)
+      let finalUrl = downloadUrl;
+      if (downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/image/upload/')) {
+        finalUrl = downloadUrl.replace('/image/upload/', '/image/upload/fl_attachment/');
       }
 
-      // 4. Fallback for legacy disk files
-      alert('This old file was uploaded before Cloudinary integration and is no longer stored on server disk. Please delete it and upload a new copy.');
+      // 3. Trigger native browser download via anchor element
+      const link = document.createElement('a');
+      link.href = finalUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (err) {
       console.error('Download error:', err);
       const errMsg = err.response?.data?.message || 'Unable to download file. It may have been uploaded prior to server restart. Please delete and re-upload.';
