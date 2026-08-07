@@ -97,9 +97,13 @@ router.get('/download/:id', protect, async (req, res) => {
       return res.status(404).json({ message: 'File record not found in database.' });
     }
 
-    // 1. If stored in Cloudinary or HTTP external URL, redirect directly
-    if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://'))) {
-      return res.redirect(file.url);
+    // 1. If stored in Cloudinary or HTTP external URL, return JSON downloadUrl
+    if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://') || file.url.startsWith('data:'))) {
+      return res.json({
+        success: true,
+        downloadUrl: file.url,
+        name: file.name
+      });
     }
 
     // 2. If relative path, check local uploads directory

@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { AuthContext, api } from '../context/AuthContext';
 import { Upload, Trash2, Download, File, Loader } from 'lucide-react';
 
@@ -91,30 +92,56 @@ const Files = () => {
     }
   };
 
-  const handleDownload = async (fileId, fileName, fileUrl) => {
-    // 1. If file has direct Cloudinary, HTTP, or Data URI URL, download directly!
-    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:'))) {
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.target = '_blank';
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      return;
-    }
-
+  const handleDownload = async (file) => {
     try {
-      const res = await api.get(`/files/download/${fileId}`, {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: res.headers['content-type'] }));
+      let downloadUrl = file.url;
+      const fileName = file.name || 'class-file';
+
+      // 1. If URL is missing, request download info from API
+      if (!downloadUrl || (!downloadUrl.startsWith('http') && !downloadUrl.startsWith('data:'))) {
+        const res = await api.get(`/files/download/${file._id}`);
+        if (res.data?.downloadUrl) {
+          downloadUrl = res.data.downloadUrl;
+        }
+      }
+
+      // 2. Download from Cloudinary / HTTP / Data URI without Bearer token to prevent CORS rejection
+      if (downloadUrl && (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://') || downloadUrl.startsWith('data:'))) {
+        try {
+          const rawAxios = axios.create(); // Clean instance without Auth headers
+          const blobRes = await rawAxios.get(downloadUrl, { responseType: 'blob' });
+          const blobUrl = window.URL.createObjectURL(new Blob([blobRes.data]));
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+          return;
+        } catch (blobErr) {
+          console.warn('Direct blob fetch fallback to direct link:', blobErr);
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.target = '_blank';
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          return;
+        }
+      }
+
+      // 3. Fallback: stream blob directly from backend for local files
+      const streamRes = await api.get(`/files/download/${file._id}`, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(new Blob([streamRes.data], { type: streamRes.headers['content-type'] }));
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       console.error('Download error:', err);
       let message = 'Error downloading file.';
@@ -200,7 +227,7 @@ const Files = () => {
 
                     <div className="file-actions">
                       <button 
-                        onClick={() => handleDownload(file._id, file.name, file.url)} 
+                        onClick={() => handleDownload(file)} 
                         className="download-btn"
                         title="Download file"
                       >
