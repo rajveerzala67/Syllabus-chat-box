@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext, api } from '../context/AuthContext';
-import { Upload, Trash2, Download, File, Loader, Eye } from 'lucide-react';
+import { Upload, Trash2, Download, File, Loader, Eye, ExternalLink, X } from 'lucide-react';
 
 const Files = () => {
   const { user } = useContext(AuthContext);
@@ -10,6 +10,10 @@ const Files = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // In-App Instant PDF / File Viewer Modal State
+  const [viewingFile, setViewingFile] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState('');
 
   const canUpload = user?.role === 'coordinator' || user?.role === 'teacher' || user?.role === 'admin';
 
@@ -196,6 +200,8 @@ const Files = () => {
         return;
       }
 
+      setViewingFile(file);
+
       // 1. Data URIs - Decode Base64 to Blob URL for clean PDF/Image viewing
       if (previewUrl.startsWith('data:')) {
         const parts = previewUrl.split(';base64,');
@@ -211,8 +217,8 @@ const Files = () => {
         }
         const blob = new Blob([uInt8Array], { type: contentType });
         const blobUrl = URL.createObjectURL(blob);
+        setPdfBlobUrl(blobUrl);
         window.open(blobUrl, '_blank', 'noopener,noreferrer');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
         return;
       }
 
@@ -224,10 +230,11 @@ const Files = () => {
           const response = await cleanAxios.get(previewUrl, { responseType: 'arraybuffer' });
           const fileBlob = new Blob([response.data], { type: 'application/pdf' });
           const blobUrl = window.URL.createObjectURL(fileBlob);
+          setPdfBlobUrl(blobUrl);
           window.open(blobUrl, '_blank', 'noopener,noreferrer');
-          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
           return;
         } catch (e) {
+          setPdfBlobUrl(previewUrl);
           window.open(previewUrl, '_blank', 'noopener,noreferrer');
           return;
         }
@@ -411,6 +418,61 @@ const Files = () => {
           )}
         </div>
       </div>
+
+      {/* IN-APP INSTANT FILE VIEWER MODAL */}
+      {viewingFile && (
+        <div className="sky-modal-backdrop" style={{ zIndex: 99999, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, padding: '20px' }}>
+          <div className="glass-card fade-in" style={{ width: '95%', maxWidth: '950px', maxHeight: '92vh', background: '#0f172a', border: '1px solid #0284c7', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(2, 132, 199, 0.4)' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                <div style={{ background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Eye size={24} />
+                </div>
+                <div style={{ overflow: 'hidden' }}>
+                  <h3 style={{ margin: 0, color: '#ffffff', fontSize: '18px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {viewingFile.name}
+                  </h3>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {viewingFile.mimeType} • Live File Preview
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+                <a
+                  href={pdfBlobUrl || viewingFile.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="blue-eye-btn"
+                  style={{ padding: '8px 14px', fontSize: '13px' }}
+                >
+                  <ExternalLink size={14} />
+                  <span>Open in Tab</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setViewingFile(null); setPdfBlobUrl(''); }}
+                  style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid #ef4444', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <X size={16} />
+                  <span>Close</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / Viewer */}
+            <div style={{ flex: 1, minHeight: '480px', height: '65vh', background: '#1e293b', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {viewingFile.mimeType?.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(viewingFile.name) ? (
+                <img src={pdfBlobUrl || viewingFile.url} alt={viewingFile.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <iframe src={pdfBlobUrl || viewingFile.url} title={viewingFile.name} width="100%" height="100%" style={{ border: 'none' }} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
