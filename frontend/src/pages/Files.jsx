@@ -184,23 +184,24 @@ const Files = () => {
   };
 
   const getDirectViewUrl = (file) => {
-    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://syllabus-chat-box-1.onrender.com/api';
     const cleanBase = baseUrl.replace(/\/$/, '');
     return `${cleanBase}/files/view/${file._id}`;
   };
 
-  const handlePreview = async (file) => {
-    try {
-      const directUrl = getDirectViewUrl(file);
-      setViewingFile(file);
-      setPdfBlobUrl(directUrl);
-      window.open(directUrl, '_blank', 'noopener,noreferrer');
-    } catch (err) {
-      console.error('Preview error:', err);
-      if (file.url) {
-        window.open(file.url, '_blank', 'noopener,noreferrer');
-      }
-    }
+  const handlePreview = (file) => {
+    const directUrl = getDirectViewUrl(file);
+    window.open(directUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDirectDownload = (file) => {
+    const url = getDirectViewUrl(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name || 'download';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
@@ -304,9 +305,9 @@ const Files = () => {
                       </a>
 
                       {/* DOWNLOAD BUTTON */}
-                      <button 
-                        type="button"
-                        onClick={() => handleDownload(file)} 
+                      <a 
+                        href={getDirectViewUrl(file)}
+                        download={file.name}
                         className="download-btn"
                         title="Download file"
                         style={{
@@ -320,12 +321,13 @@ const Files = () => {
                           borderRadius: '10px',
                           fontWeight: '700',
                           fontSize: '13px',
+                          textDecoration: 'none',
                           cursor: 'pointer'
                         }}
                       >
                         <Download size={16} />
                         <span>Download</span>
-                      </button>
+                      </a>
                       
                       {canUpload && (
                         <button 
