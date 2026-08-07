@@ -4,33 +4,25 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const File = require('../models/File');
-const { protect, requireRole, canUploadFiles } = require('../middleware/auth');
+const { protect, canUploadFiles } = require('../middleware/auth');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 
-// Ensure uploads folder exists
+// Ensure uploads folder exists for local fallback
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer Config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique name to prevent collisions
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer memory storage (allows Cloudinary upload)
+const storage = multer.memoryStorage();
 
 // File filter (accept images and pdfs)
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and PDF are allowed.'), false);
+    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP and PDF files are allowed.'), false);
   }
 };
 
@@ -68,9 +60,15 @@ router.post('/upload', protect, canUploadFiles, (req, res) => {
     try {
       const savedFiles = [];
       for (const file of req.files) {
+        // Upload to Cloudinary (or local fallback)
+        const mimeType = file.mimetype || 'application/pdf';
+        const cloudinaryResult = await uploadToCloudinary(file.buffer, 'class_files', mimeType);
+
         const newFile = new File({
           name: file.originalname,
-          path: file.filename, // We store the filename inside the uploads folder
+          path: cloudinaryResult.public_id || file.originalname,
+          url: cloudinaryResult.url,
+          publicId: cloudinaryResult.public_id,
           mimeType: file.mimetype,
           uploadedBy: req.user.id
         });
@@ -83,7 +81,8 @@ router.post('/upload', protect, canUploadFiles, (req, res) => {
         files: savedFiles
       });
     } catch (dbErr) {
-      res.status(500).json({ message: dbErr.message });
+      console.error('Error in files upload:', dbErr);
+      res.status(500).json({ message: dbErr.message || 'Error saving file metadata' });
     }
   });
 });
@@ -95,17 +94,27 @@ router.get('/download/:id', protect, async (req, res) => {
   try {
     const file = await File.findById(req.params.id);
     if (!file) {
-      return res.status(404).json({ message: 'File not found' });
+      return res.status(404).json({ message: 'File record not found in database.' });
     }
 
-    const filePath = path.join(uploadDir, file.path);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: 'File does not exist on disk' });
+    // 1. If stored in Cloudinary or HTTP external URL, redirect directly
+    if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://'))) {
+      return res.redirect(file.url);
     }
 
-    res.download(filePath, file.name);
+    // 2. If relative path, check local uploads directory
+    const fileNameOnDisk = file.path ? path.basename(file.path) : file.name;
+    const filePath = path.join(uploadDir, fileNameOnDisk);
+
+    if (fs.existsSync(filePath)) {
+      return res.download(filePath, file.name);
+    }
+
+    // 3. Fallback error when local file missing on Render disk
+    res.status(404).json({ message: 'File is no longer available on disk. Please delete and re-upload.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error downloading file:', error);
+    res.status(500).json({ message: error.message || 'Server error downloading file' });
   }
 });
 
@@ -119,11 +128,16 @@ router.delete('/:id', protect, canUploadFiles, async (req, res) => {
       return res.status(404).json({ message: 'File not found' });
     }
 
-    const filePath = path.join(uploadDir, file.path);
-    
-    // Delete from file system
+    // Delete from Cloudinary if stored there
+    if (file.publicId) {
+      await deleteFromCloudinary(file.publicId);
+    }
+
+    // Delete from local filesystem if exists
+    const fileNameOnDisk = file.path ? path.basename(file.path) : file.name;
+    const filePath = path.join(uploadDir, fileNameOnDisk);
     if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+      try { fs.unlinkSync(filePath); } catch (e) {}
     }
 
     // Delete record from Database

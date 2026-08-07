@@ -56,7 +56,7 @@ router.post('/register', async (req, res) => {
     const user = await User.create({
       username: formattedUsername,
       email: formattedEmail || undefined,
-      password,
+      password: password.trim(),
       role: selectedRole
     });
 

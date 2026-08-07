@@ -91,12 +91,18 @@ const Files = () => {
     }
   };
 
-  const handleDownload = async (fileId, fileName) => {
+  const handleDownload = async (fileId, fileName, fileUrl) => {
+    // 1. If file has direct Cloudinary or HTTP URL, open/download directly!
+    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+      window.open(fileUrl, '_blank');
+      return;
+    }
+
     try {
       const res = await api.get(`/files/download/${fileId}`, {
         responseType: 'blob'
       });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: res.headers['content-type'] }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', fileName);
@@ -104,8 +110,18 @@ const Files = () => {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err);
-      alert('Error downloading file');
+      console.error('Download error:', err);
+      let message = 'Error downloading file.';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          message = json.message || message;
+        } catch (e) {}
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      alert(message);
     }
   };
 
@@ -178,7 +194,7 @@ const Files = () => {
 
                     <div className="file-actions">
                       <button 
-                        onClick={() => handleDownload(file._id, file.name)} 
+                        onClick={() => handleDownload(file._id, file.name, file.url)} 
                         className="download-btn"
                         title="Download file"
                       >

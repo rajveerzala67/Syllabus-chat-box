@@ -82,14 +82,20 @@ const uploadToCloudinary = (fileBuffer, folder = 'student_photos', mimeType = 'i
     }, 5000);
 
     try {
+      const isClassFile = folder === 'class_files' || mimeType.includes('pdf');
+      const uploadOptions = {
+        folder,
+        resource_type: isClassFile ? 'auto' : 'image'
+      };
+
+      if (!isClassFile) {
+        uploadOptions.transformation = [
+          { width: 600, height: 600, crop: 'fill', gravity: 'face' }
+        ];
+      }
+
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: 'image',
-          transformation: [
-            { width: 600, height: 600, crop: 'fill', gravity: 'face' }
-          ]
-        },
+        uploadOptions,
         (error, result) => {
           clearTimeout(timeout);
           if (isResolved) return;

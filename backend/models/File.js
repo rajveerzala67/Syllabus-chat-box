@@ -9,6 +9,12 @@ const FileSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  url: {
+    type: String
+  },
+  publicId: {
+    type: String
+  },
   mimeType: {
     type: String,
     required: true
