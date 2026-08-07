@@ -97,7 +97,7 @@ const Files = () => {
       let downloadUrl = file.url;
       const fileName = file.name || 'class-file';
 
-      // 1. If URL is missing, request download info from API
+      // 1. If direct URL is missing, request download info from backend
       if (!downloadUrl || (!downloadUrl.startsWith('http') && !downloadUrl.startsWith('data:'))) {
         const res = await api.get(`/files/download/${file._id}`);
         if (res.data?.downloadUrl) {
@@ -105,56 +105,37 @@ const Files = () => {
         }
       }
 
-      // 2. Download from Cloudinary / HTTP / Data URI without Bearer token to prevent CORS rejection
-      if (downloadUrl && (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://') || downloadUrl.startsWith('data:'))) {
-        try {
-          const rawAxios = axios.create(); // Clean instance without Auth headers
-          const blobRes = await rawAxios.get(downloadUrl, { responseType: 'blob' });
-          const blobUrl = window.URL.createObjectURL(new Blob([blobRes.data]));
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.setAttribute('download', fileName);
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
-          return;
-        } catch (blobErr) {
-          console.warn('Direct blob fetch fallback to direct link:', blobErr);
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.target = '_blank';
-          link.setAttribute('download', fileName);
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          return;
-        }
+      // 2. For Cloudinary files, force native attachment download using fl_attachment transformation flag
+      if (downloadUrl && downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
+        const attachmentUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+        const link = document.createElement('a');
+        link.href = attachmentUrl;
+        link.target = '_blank';
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
       }
 
-      // 3. Fallback: stream blob directly from backend for local files
-      const streamRes = await api.get(`/files/download/${file._id}`, { responseType: 'blob' });
-      const blobUrl = window.URL.createObjectURL(new Blob([streamRes.data], { type: streamRes.headers['content-type'] }));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+      // 3. For Data URIs or direct HTTP URLs
+      if (downloadUrl && (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://') || downloadUrl.startsWith('data:'))) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+
+      // 4. Fallback for legacy disk files
+      alert('This old file was uploaded before Cloudinary integration and is no longer stored on server disk. Please delete it and upload a new copy.');
     } catch (err) {
       console.error('Download error:', err);
-      let message = 'Error downloading file.';
-      if (err.response?.data instanceof Blob) {
-        try {
-          const text = await err.response.data.text();
-          const json = JSON.parse(text);
-          message = json.message || message;
-        } catch (e) {}
-      } else if (err.response?.data?.message) {
-        message = err.response.data.message;
-      }
-      alert(message);
+      const errMsg = err.response?.data?.message || 'Unable to download file. It may have been uploaded prior to server restart. Please delete and re-upload.';
+      alert(errMsg);
     }
   };
 
