@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext, api } from '../context/AuthContext';
-import { Upload, Trash2, Download, File, Loader } from 'lucide-react';
+import { Upload, Trash2, Download, File, Loader, Eye } from 'lucide-react';
 
 const Files = () => {
   const { user } = useContext(AuthContext);
@@ -169,6 +169,14 @@ const Files = () => {
     }
   };
 
+  const handlePreview = (file) => {
+    if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://') || file.url.startsWith('data:'))) {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+    } else {
+      alert('Preview is unavailable for this old file. Please delete it and upload a fresh copy.');
+    }
+  };
+
   return (
     <div className="container files-container fade-in">
       <div className="glass-card files-card">
@@ -237,6 +245,15 @@ const Files = () => {
                     </div>
 
                     <div className="file-actions">
+                      <button 
+                        onClick={() => handlePreview(file)} 
+                        className="preview-btn"
+                        title="View / Preview file in browser"
+                        style={{ marginRight: '6px' }}
+                      >
+                        <Eye size={18} />
+                      </button>
+
                       <button 
                         onClick={() => handleDownload(file)} 
                         className="download-btn"
