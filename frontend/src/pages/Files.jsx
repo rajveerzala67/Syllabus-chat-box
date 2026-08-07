@@ -92,9 +92,15 @@ const Files = () => {
   };
 
   const handleDownload = async (fileId, fileName, fileUrl) => {
-    // 1. If file has direct Cloudinary or HTTP URL, open/download directly!
-    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
-      window.open(fileUrl, '_blank');
+    // 1. If file has direct Cloudinary, HTTP, or Data URI URL, download directly!
+    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:'))) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.target = '_blank';
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       return;
     }
 
