@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, AuthContext } from '../context/AuthContext';
+import { api, AuthContext, getStudentPhotoUrl } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import {
   Smartphone, CheckCircle2, AlertCircle, RefreshCw, X, ShieldAlert,
@@ -230,7 +230,7 @@ const NfcScanner = () => {
               <div style={{ margin: '16px 0' }}>
                 {alert.student.photoUrl && (
                   <img 
-                    src={alert.student.photoUrl} 
+                    src={getStudentPhotoUrl(alert.student.photoUrl)} 
                     alt={alert.student.fullName} 
                     style={{ width: '84px', height: '84px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #34d399', margin: '0 auto 12px auto', display: 'block' }}
                   />
@@ -304,7 +304,7 @@ const NfcScanner = () => {
               return (
                 <div key={record._id} className="scanned-student-card fade-in">
                   <div className="student-photo-wrapper">
-                    <img src={st.photoUrl || '/placeholder.png'} alt={st.fullName} />
+                    <img src={getStudentPhotoUrl(st.photoUrl)} alt={st.fullName} />
                     <span className="status-check-badge"><Check size={12} /></span>
                   </div>
                   <div className="student-card-info">

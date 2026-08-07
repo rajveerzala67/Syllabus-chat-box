@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { io } from 'socket.io-client';
-import { api, AuthContext } from '../context/AuthContext';
+import { api, AuthContext, getStudentPhotoUrl } from '../context/AuthContext';
 import {
   BookOpen, Clock, Calendar, CheckCircle2, AlertCircle, RefreshCw,
   ArrowRightLeft, AlertTriangle, UserCheck, Layers, FileText, Trash2
@@ -120,7 +120,7 @@ const StudentLibrary = () => {
           <div className="glass-card page-header-card" style={{ display: 'block', padding: '24px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
               <img
-                src={student.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80'}
+                src={getStudentPhotoUrl(student.photoUrl)}
                 alt={student.fullName}
                 style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #38bdf8' }}
                 onError={(e) => {

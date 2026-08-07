@@ -10,6 +10,16 @@ export const api = axios.create({
   baseURL: API_BASE_URL
 });
 
+export const getStudentPhotoUrl = (photoUrl) => {
+  if (!photoUrl) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80';
+  if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('data:')) {
+    return photoUrl;
+  }
+  const rawApiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api';
+  const backendBase = rawApiUrl.replace(/\/api\/?$/, '');
+  return `${backendBase}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));

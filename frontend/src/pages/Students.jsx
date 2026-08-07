@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { api, AuthContext } from '../context/AuthContext';
+import { api, AuthContext, getStudentPhotoUrl } from '../context/AuthContext';
 import {
   Users, UserPlus, Search, Filter, RefreshCw, Eye, Edit3, Trash2,
   X, UploadCloud, CheckCircle2, AlertCircle, ShieldAlert, Sparkles, Smartphone, Mail, Phone, Calendar, MapPin
@@ -366,7 +366,7 @@ const Students = () => {
                   <tr key={student._id}>
                     <td>
                       <img
-                        src={student.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80'}
+                        src={getStudentPhotoUrl(student.photoUrl)}
                         alt={student.fullName}
                         className="student-avatar-thumb"
                         onClick={() => { setViewStudent(student); setShowViewModal(true); }}
@@ -711,22 +711,32 @@ const Students = () => {
 
                   {/* Photo Upload Input & Preview */}
                   <div className="sky-input-group full-width">
-                    <label>Passport Size Photo (Cloudinary Upload, Max 5MB) *</label>
+                    <label>Passport Size Photo (Max 5MB) {modalMode === 'add' ? '*' : '(Optional to change)'}</label>
                     <div className="photo-upload-box">
-                      <div className="upload-input-area">
+                      <div className="upload-input-area" style={{ position: 'relative' }}>
                         <UploadCloud size={24} className="upload-icon" />
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/jpg,image/webp"
                           onChange={handleFileChange}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }}
                         />
-                        <span>Click or drag image file here</span>
+                        <span>{photoFile ? photoFile.name : (modalMode === 'edit' ? '📸 Click here to choose a new photo' : 'Click or drag image file here')}</span>
                         <small>Allowed formats: JPG, PNG, WEBP (Max 5MB)</small>
                       </div>
                       {photoPreview && (
-                        <div className="photo-preview-box">
-                          <img src={photoPreview} alt="Passport Preview" />
-                          <span className="preview-tag">Photo Selected</span>
+                        <div className="photo-preview-box" style={{ zIndex: 5 }}>
+                          <img 
+                            src={getStudentPhotoUrl(photoPreview)} 
+                            alt="Passport Preview" 
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80';
+                            }}
+                          />
+                          <span className="preview-tag" style={{ background: photoFile ? '#10b981' : '#0284c7' }}>
+                            {photoFile ? 'New Photo Selected' : 'Current Photo'}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -774,7 +784,7 @@ const Students = () => {
             <div className="student-profile-card">
               <div className="profile-photo-container">
                 <img 
-                  src={viewStudent.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80'} 
+                  src={getStudentPhotoUrl(viewStudent.photoUrl)} 
                   alt={viewStudent.fullName} 
                   className="profile-photo" 
                   onError={(e) => {

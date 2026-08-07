@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../context/AuthContext';
+import { api, getStudentPhotoUrl } from '../context/AuthContext';
 import { 
   BarChart3, Search, Filter, RefreshCw, FileText, Download, Printer,
   Users, CheckCircle2, Calendar, Layers, MapPin, Check, X
@@ -200,7 +200,7 @@ const AttendanceReports = () => {
                     <tr key={r._id}>
                       <td>
                         <div className="student-profile-cell">
-                          <img src={st.photoUrl || '/placeholder.png'} alt={st.fullName} className="student-avatar-thumb" />
+                          <img src={getStudentPhotoUrl(st.photoUrl)} alt={st.fullName} className="student-avatar-thumb" />
                           <span className="student-name-text">{st.fullName || 'Student'}</span>
                         </div>
                       </td>

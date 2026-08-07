@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { api, AuthContext } from '../context/AuthContext';
+import { api, AuthContext, getStudentPhotoUrl } from '../context/AuthContext';
 import {
   BookOpen, Plus, Search, RefreshCw, X, CheckCircle2, AlertCircle,
   Calendar, Layers, MapPin, Smartphone, Check, Lock, Trash2, Edit3,
@@ -561,7 +561,7 @@ const LibraryDashboard = () => {
                             <tr key={tx._id}>
                               <td>
                                 <div className="student-profile-cell">
-                                  <img src={st.photoUrl || '/placeholder.png'} alt={st.fullName} className="student-avatar-thumb" />
+                                  <img src={getStudentPhotoUrl(st.photoUrl)} alt={st.fullName} className="student-avatar-thumb" />
                                   <div>
                                     <span className="student-name-text">{st.fullName || 'Student'}</span>
                                     <span className="enrollment-tag" style={{ display: 'block', fontSize: '11px' }}>{st.enrollmentNumber}</span>
@@ -632,7 +632,7 @@ const LibraryDashboard = () => {
                             <tr key={visit._id}>
                               <td>
                                 <div className="student-profile-cell">
-                                  <img src={st.photoUrl || '/placeholder.png'} alt={st.fullName} className="student-avatar-thumb" />
+                                  <img src={getStudentPhotoUrl(st.photoUrl)} alt={st.fullName} className="student-avatar-thumb" />
                                   <span className="student-name-text">{st.fullName || 'Student'}</span>
                                 </div>
                               </td>
@@ -690,7 +690,7 @@ const LibraryDashboard = () => {
                             <tr key={tx._id}>
                               <td>
                                 <div className="student-profile-cell">
-                                  <img src={st.photoUrl || '/placeholder.png'} alt={st.fullName} className="student-avatar-thumb" />
+                                  <img src={getStudentPhotoUrl(st.photoUrl)} alt={st.fullName} className="student-avatar-thumb" />
                                   <div>
                                     <span className="student-name-text">{st.fullName}</span>
                                     <span className="enrollment-tag" style={{ display: 'block', fontSize: '11px' }}>{st.enrollmentNumber}</span>
