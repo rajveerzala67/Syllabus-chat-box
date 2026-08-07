@@ -19,26 +19,18 @@ const path = require('path');
  */
 const saveBufferLocally = (fileBuffer, mimeType = 'image/jpeg') => {
   try {
-    const photosDir = path.join(__dirname, '../uploads/student_photos');
-    if (!fs.existsSync(photosDir)) {
-      fs.mkdirSync(photosDir, { recursive: true });
-    }
-    const ext = mimeType.includes('png') ? '.png' : mimeType.includes('webp') ? '.webp' : '.jpg';
-    const filename = `photo_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
-    const filePath = path.join(photosDir, filename);
-    fs.writeFileSync(filePath, fileBuffer);
-
-    console.log(`📸 Saved student photo locally to: /uploads/student_photos/${filename}`);
+    const base64Str = fileBuffer.toString('base64');
+    const dataUri = `data:${mimeType};base64,${base64Str}`;
+    console.log(`📸 Generated persistent Data URI for photo (${Math.round(base64Str.length / 1024)} KB)`);
     return {
-      url: `/uploads/student_photos/${filename}`,
-      public_id: `local_${filename}`
+      url: dataUri,
+      public_id: `base64_${Date.now()}_${Math.round(Math.random() * 1e6)}`
     };
   } catch (err) {
-    console.error('Error saving photo locally:', err);
-    const base64Str = fileBuffer.toString('base64');
+    console.error('Error generating photo Data URI:', err);
     return {
-      url: `data:${mimeType};base64,${base64Str}`,
-      public_id: `base64_${Date.now()}`
+      url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80',
+      public_id: `default_${Date.now()}`
     };
   }
 };
