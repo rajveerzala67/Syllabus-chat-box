@@ -278,57 +278,31 @@ const Files = () => {
                     </div>
 
                     <div className="file-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                      {/* DIRECT LINK BUTTON TO VIEW FILE INLINE */}
+                      {/* SINGLE VIEW BUTTON — direct link to backend stream */}
                       <a 
                         href={getDirectViewUrl(file)}
                         target="_blank"
                         rel="noreferrer"
-                        className="blue-eye-btn"
-                        title="Watch / View file in browser"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '7px',
                           background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
                           color: '#ffffff',
-                          padding: '9px 16px',
-                          borderRadius: '10px',
+                          padding: '10px 20px',
+                          borderRadius: '12px',
                           textDecoration: 'none',
                           fontWeight: '800',
                           fontSize: '14px',
                           boxShadow: '0 4px 16px rgba(2, 132, 199, 0.45)',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          whiteSpace: 'nowrap'
                         }}
                       >
-                        <Eye size={18} style={{ color: '#ffffff' }} />
-                        <span>Watch / View File</span>
+                        <Eye size={18} />
+                        <span>View</span>
                       </a>
 
-                      {/* DOWNLOAD BUTTON */}
-                      <a 
-                        href={getDirectViewUrl(file)}
-                        download={file.name}
-                        className="download-btn"
-                        title="Download file"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'rgba(16, 185, 129, 0.15)',
-                          color: '#34d399',
-                          border: '1px solid rgba(16, 185, 129, 0.4)',
-                          padding: '9px 14px',
-                          borderRadius: '10px',
-                          fontWeight: '700',
-                          fontSize: '13px',
-                          textDecoration: 'none',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Download size={16} />
-                        <span>Download</span>
-                      </a>
-                      
                       {canUpload && (
                         <button 
                           type="button"
@@ -342,8 +316,8 @@ const Files = () => {
                             background: 'rgba(239, 68, 68, 0.15)',
                             color: '#ef4444',
                             border: '1px solid rgba(239, 68, 68, 0.3)',
-                            padding: '9px 12px',
-                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
                             cursor: 'pointer'
                           }}
                         >

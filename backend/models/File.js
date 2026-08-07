@@ -29,4 +29,7 @@ const FileSchema = new mongoose.Schema({
   }
 });
 
+// Auto-delete files after 24 hours (86400 seconds)
+FileSchema.index({ uploadedAt: 1 }, { expireAfterSeconds: 86400 });
+
 module.exports = mongoose.model('File', FileSchema);
