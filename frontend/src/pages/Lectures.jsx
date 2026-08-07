@@ -204,41 +204,6 @@ const Lectures = () => {
             {/* Teacher Actions */}
             {isTeacher && (
               <div className="lecture-card-actions">
-                {lecture.isAttendanceWindowOpen ? (
-                  <>
-                    <button 
-                      className="sky-primary-btn size-auto" 
-                      onClick={() => handleStartAttendance(lecture._id)}
-                    >
-                      <Smartphone size={16} className="mr-6" /> Open Scanner
-                    </button>
-                    <button 
-                      className="outline-btn" 
-                      onClick={() => handleCloseWindow(lecture._id)}
-                      style={{ borderColor: '#ef4444', color: '#f87171' }}
-                    >
-                      Close Session
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button 
-                      className="sky-primary-btn size-auto" 
-                      onClick={() => handleStartAttendance(lecture._id)}
-                    >
-                      <Play size={16} className="mr-6" /> Start Attendance
-                    </button>
-                    {isToday && (
-                      <button 
-                        className="outline-btn" 
-                        onClick={() => handleReopenWindow(lecture._id)}
-                      >
-                        <RefreshCw size={14} className="mr-4" /> +10 Mins
-                      </button>
-                    )}
-                  </>
-                )}
-
                 <button 
                   className="outline-btn delete-lecture-btn" 
                   onClick={() => handleDeleteLecture(lecture._id, lecture.subject)}
@@ -246,7 +211,7 @@ const Lectures = () => {
                   style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
                 >
                   <Trash2 size={15} />
-                  <span>Delete</span>
+                  <span>Delete Schedule</span>
                 </button>
               </div>
             )}
@@ -274,8 +239,8 @@ const Lectures = () => {
             <Calendar size={32} />
           </div>
           <div>
-            <h2>Lecture Scheduling & Attendance</h2>
-            <p className="subtitle">Schedule class lectures, open 10-min NFC attendance windows, & manage active sessions</p>
+            <h2>Lecture Scheduling</h2>
+            <p className="subtitle">Schedule class lectures, manage timetables, & prepare for future AI Attendance module</p>
           </div>
         </div>
         <div className="header-right">

@@ -74,9 +74,13 @@ const NfcScanner = () => {
     };
   }, [sessionId]);
 
-  // Web NFC Reader Handler (Android Devices)
+  // Web NFC Reader Handler (Android Devices) with W3C NDEF Byte Decoding
   const startWebNfcReader = async () => {
     try {
+      if (!('NDEFReader' in window)) {
+        return;
+      }
+
       const ndef = new window.NDEFReader();
       await ndef.scan();
       setIsScanning(true);
@@ -84,16 +88,30 @@ const NfcScanner = () => {
       ndef.addEventListener('reading', ({ serialNumber, message }) => {
         let scannedTagValue = '';
 
-        // 1. Decode written NDEF Text / URI payload (e.g. Enrollment Number "2301030400068")
         if (message && message.records && message.records.length > 0) {
           for (const record of message.records) {
             try {
-              const textDecoder = new TextDecoder(record.encoding || 'utf-8');
-              const decodedText = textDecoder.decode(record.data).trim();
-              if (decodedText) {
-                // Strip non-printable characters or language codes (e.g. \x02en2301030400068 -> 2301030400068)
-                scannedTagValue = decodedText.replace(/^[^\w]+(en|es|fr|de)?/i, '').trim() || decodedText;
-                if (scannedTagValue) break;
+              let text = '';
+              if (record.recordType === 'text') {
+                const dataView = new DataView(record.data.buffer, record.data.byteOffset, record.data.byteLength);
+                const statusByte = dataView.getUint8(0);
+                const langLength = statusByte & 0x3f;
+                const textDecoder = new TextDecoder(record.encoding || 'utf-8');
+                const textBytes = new Uint8Array(
+                  record.data.buffer,
+                  record.data.byteOffset + 1 + langLength,
+                  record.data.byteLength - 1 - langLength
+                );
+                text = textDecoder.decode(textBytes).trim();
+              } else {
+                const textDecoder = new TextDecoder();
+                text = textDecoder.decode(record.data).trim();
+              }
+
+              const clean = text.replace(/^[\x00-\x1F\x7F-\x9F]+/, '').replace(/^(en|es|fr|de)/i, '').trim();
+              if (clean) {
+                scannedTagValue = clean;
+                break;
               }
             } catch (decErr) {
               console.warn('NDEF Record decoding warning:', decErr);
@@ -101,14 +119,15 @@ const NfcScanner = () => {
           }
         }
 
-        // 2. Fallback to hardware chip Serial Number if no text payload found
         if (!scannedTagValue && serialNumber) {
           const cleanSerial = serialNumber.replace(/:/g, '').toUpperCase();
           scannedTagValue = cleanSerial.startsWith('NFC-') ? cleanSerial : `NFC-${cleanSerial}`;
         }
 
-        console.log('📱 Web NFC Scanned Payload:', scannedTagValue);
         if (scannedTagValue) {
+          if ('vibrate' in navigator) {
+            navigator.vibrate([120, 80, 120]);
+          }
           processNfcScan(scannedTagValue);
         }
       });

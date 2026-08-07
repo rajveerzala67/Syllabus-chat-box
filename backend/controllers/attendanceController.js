@@ -8,130 +8,9 @@ const Attendance = require('../models/Attendance');
 // @route   POST /api/attendance/scan-nfc
 // @access  Private (Teachers/Coordinators only)
 const scanNfcCard = async (req, res) => {
-  try {
-    const { nfcCardNumber, sessionId } = req.body;
-
-    if (!nfcCardNumber || !sessionId) {
-      return res.status(400).json({ message: 'NFC Card Number and Session ID are required.' });
-    }
-
-    const cleanNfc = nfcCardNumber.trim();
-
-    // 1. Verify Active Attendance Session
-    const session = await AttendanceSession.findById(sessionId).populate('lecture');
-    if (!session || session.status !== 'Active') {
-      return res.status(400).json({ message: 'Attendance Session Closed.' });
-    }
-
-    // 2. Verify Attendance Window Time
-    const now = new Date();
-    if (now > new Date(session.attendanceEnd)) {
-      // Auto close session if expired
-      session.status = 'Closed';
-      await session.save();
-      if (session.lecture) {
-        session.lecture.isAttendanceWindowOpen = false;
-        await session.lecture.save();
-      }
-      return res.status(400).json({ message: 'Attendance Window Closed.' });
-    }
-
-    // 3. Robust Search Student by Enrollment Number, NFC Tag Number, or Cleaned String
-    const rawTag = cleanNfc.replace(/^[^\w]+(en|es|fr|de)?/i, '').trim();
-    const tagUpper = rawTag.toUpperCase();
-    const tagNfcFormat = tagUpper.startsWith('NFC-') ? tagUpper : `NFC-${tagUpper}`;
-
-    const student = await Student.findOne({
-      $or: [
-        { enrollmentNumber: rawTag },
-        { enrollmentNumber: tagUpper },
-        { nfcTagNumber: rawTag },
-        { nfcTagNumber: tagUpper },
-        { nfcTagNumber: tagNfcFormat },
-        { enrollmentNumber: new RegExp(`^${rawTag}$`, 'i') },
-        { nfcTagNumber: new RegExp(`^${rawTag}$`, 'i') }
-      ]
-    });
-
-    if (!student) {
-      return res.status(404).json({ message: `NFC Card (${rawTag}) is not registered to any student.` });
-    }
-
-    // 4. Verify Semester & Division Match
-    if (
-      student.semester.toString().trim() !== session.semester.toString().trim() ||
-      student.division.trim().toUpperCase() !== session.division.trim().toUpperCase()
-    ) {
-      return res.status(400).json({
-        message: `Student ${student.fullName} is in Sem ${student.semester} (Div ${student.division}), but this session is for Sem ${session.semester} (Div ${session.division})!`
-      });
-    }
-
-    // 5. Check Duplicate Attendance Scan
-    const existingScan = await Attendance.findOne({
-      session: session._id,
-      student: student._id
-    });
-
-    if (existingScan) {
-      return res.status(400).json({
-        message: `Attendance Already Marked for ${student.fullName} (${student.enrollmentNumber}).`
-      });
-    }
-
-    // 6. Create Attendance Record in MongoDB with Permanent Details Snapshot
-    const attendance = await Attendance.create({
-      session: session._id,
-      lecture: session.lecture._id || session.lecture,
-      student: student._id,
-      nfcTagNumber: student.nfcTagNumber,
-      semester: student.semester,
-      division: student.division,
-      scannedAt: now,
-      status: 'Present',
-      subject: session.subject || '',
-      room: session.room || '',
-      startTime: session.startTime || '',
-      endTime: session.endTime || '',
-      lectureDate: session.date || now,
-      teacherName: req.user ? (req.user.username || 'Teacher') : 'Teacher'
-    });
-
-    // Formatted payload for real-time Socket.IO & HTTP response
-    const scanData = {
-      _id: attendance._id,
-      student: {
-        _id: student._id,
-        fullName: student.fullName,
-        enrollmentNumber: student.enrollmentNumber,
-        photoUrl: student.photoUrl,
-        department: student.department,
-        semester: student.semester,
-        division: student.division,
-        nfcTagNumber: student.nfcTagNumber
-      },
-      subject: session.subject,
-      scannedAt: attendance.scannedAt,
-      status: 'Present'
-    };
-
-    // Emit real-time Socket.IO broadcast to active scanner clients
-    const io = req.app.get('socketio');
-    if (io) {
-      io.to(session._id.toString()).emit('nfc:scanned', scanData);
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Attendance Marked Successfully',
-      student: scanData.student,
-      subject: session.subject,
-      scannedAt: attendance.scannedAt
-    });
-  } catch (error) {
-    console.error('Error in scanNfcCard:', error);
-    res.status(500).json({ message: error.message || 'Server error processing NFC tap scan' });
-  }
+  return res.status(400).json({
+    message: 'NFC Attendance workflow has been migrated to NFC Library Management. Attendance module is reserved for future AI Face Recognition integration.'
+  });
 };
 
 // @desc    Get live scanned students for an active session
@@ -261,7 +140,16 @@ const getStudentAttendanceDashboard = async (req, res) => {
     }
 
     if (!student) {
-      return res.status(404).json({ message: 'Student profile not linked to your user account. Please ask teacher to register your student profile.' });
+      return res.json({
+        success: false,
+        student: null,
+        overallPercentage: 0,
+        totalLecturesCount: 0,
+        totalPresentCount: 0,
+        subjectBreakdown: [],
+        lectureHistory: [],
+        message: 'Student profile not linked to your user account. Please ask teacher to register your student profile.'
+      });
     }
 
     // Flexible Semester & Division regex matching

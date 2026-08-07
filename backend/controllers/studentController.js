@@ -61,11 +61,18 @@ const createStudent = async (req, res) => {
       return res.status(400).json({ message: `NFC Tag Number '${formattedNfc}' is already assigned to another student.` });
     }
 
-    // Upload photo to Cloudinary
-    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, 'student_photos');
+    // Check duplicate Email Address
+    const existingEmail = await Student.findOne({ email: studentEmail });
+    if (existingEmail) {
+      return res.status(400).json({ message: `Email address '${studentEmail}' is already registered to another student.` });
+    }
 
-    // Auto-generate temporary password (e.g. SOU + 4 random digits like SOU4829)
-    const tempPassword = `SOU${Math.floor(1000 + Math.random() * 9000)}`;
+    // Upload photo to Cloudinary (or local fallback)
+    const mimeType = req.file ? req.file.mimetype : 'image/jpeg';
+    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, 'student_photos', mimeType);
+
+    // Secure random temporary password (e.g. SOU-482915)
+    const tempPassword = `SOU-${Math.floor(100000 + Math.random() * 900000)}`;
 
     // Check if a User account already exists for this student by username or email
     let userAccount = await User.findOne({
@@ -84,6 +91,9 @@ const createStudent = async (req, res) => {
         role: 'student',
         mustChangePassword: true
       });
+    } else {
+      userAccount.mustChangePassword = true;
+      await userAccount.save();
     }
 
     // Create student profile in MongoDB
@@ -112,7 +122,7 @@ const createStudent = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Student profile & login account created successfully!',
+      message: `Student profile & login account created! Temporary password is '${tempPassword}'.`,
       student,
       credentials: {
         email: studentEmail,
@@ -266,8 +276,9 @@ const updateStudent = async (req, res) => {
       if (student.photoPublicId) {
         await deleteFromCloudinary(student.photoPublicId);
       }
-      // 2. Upload new image to Cloudinary
-      const cloudinaryResult = await uploadToCloudinary(req.file.buffer, 'student_photos');
+      // 2. Upload new image to Cloudinary (or local fallback)
+      const mimeType = req.file.mimetype || 'image/jpeg';
+      const cloudinaryResult = await uploadToCloudinary(req.file.buffer, 'student_photos', mimeType);
       student.photoUrl = cloudinaryResult.url;
       student.photoPublicId = cloudinaryResult.public_id;
     }

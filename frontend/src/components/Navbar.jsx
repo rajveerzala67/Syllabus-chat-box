@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   BookOpen, FileText, ClipboardList, Users, Calendar, BarChart3, 
-  Award, Info, Mail, LogOut, Menu, X 
+  Award, Info, Mail, LogOut, Menu, X, Smartphone 
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -11,8 +11,9 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const canManageLibrary = user && (user.role === 'library_staff' || user.role === 'teacher' || user.role === 'admin');
   const isTeacher = user && (user.role === 'teacher' || user.role === 'admin');
-  const canViewReport = user && (user.role === 'student' || user.role === 'coordinator');
+  const isStudent = user && (user.role === 'student' || user.role === 'coordinator');
 
   const handleSignOut = () => {
     setMobileOpen(false);
@@ -47,6 +48,20 @@ const Navbar = () => {
           <span>Home</span>
         </NavLink>
         
+        {/* Library Staff, Teacher & Admin Navigation */}
+        {canManageLibrary && (
+          <>
+            <NavLink to="/library" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <BookOpen className="nav-icon" size={18} />
+              <span>Library</span>
+            </NavLink>
+            <NavLink to="/library-scanner" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <Smartphone className="nav-icon" size={18} />
+              <span>NFC Scanner</span>
+            </NavLink>
+          </>
+        )}
+
         {/* Teacher Navigation */}
         {isTeacher && (
           <>
@@ -62,11 +77,17 @@ const Navbar = () => {
         )}
 
         {/* Student & Class Coordinator Navigation */}
-        {canViewReport && (
-          <NavLink to="/report" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
-            <BarChart3 className="nav-icon" size={18} />
-            <span>Report</span>
-          </NavLink>
+        {isStudent && (
+          <>
+            <NavLink to="/my-library" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <BookOpen className="nav-icon" size={18} />
+              <span>My Library</span>
+            </NavLink>
+            <NavLink to="/report" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>
+              <BarChart3 className="nav-icon" size={18} />
+              <span>Report</span>
+            </NavLink>
+          </>
         )}
 
         <NavLink to="/files" onClick={closeMenu} className={({ isActive }) => isActive ? "tab-link active" : "tab-link"}>

@@ -48,6 +48,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -62,10 +64,11 @@ app.use('/api/files', require('./routes/files'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/lectures', require('./routes/lectures'));
 app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/library', require('./routes/library'));
 
 // Base route for sanity check
 app.get('/', (req, res) => {
-  res.json({ message: 'Smart Academic Management System & NFC Attendance API is running' });
+  res.json({ message: 'Smart Academic Management System & NFC Library API is running' });
 });
 
 // Error handling middleware

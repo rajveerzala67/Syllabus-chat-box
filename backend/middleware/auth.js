@@ -41,7 +41,7 @@ const teacherOnly = (req, res, next) => {
   if (req.user && (req.user.role === 'teacher' || req.user.role === 'admin')) {
     next();
   } else {
-    res.status(403).json({ message: 'Forbidden: Access restricted to logged-in teachers only' });
+    res.status(403).json({ message: 'Forbidden: Access restricted to logged-in teachers and admins only' });
   }
 };
 
@@ -53,4 +53,12 @@ const canUploadFiles = (req, res, next) => {
   }
 };
 
-module.exports = { protect, requireRole, teacherOnly, canUploadFiles };
+const canManageLibrary = (req, res, next) => {
+  if (req.user && (req.user.role === 'library_staff' || req.user.role === 'teacher' || req.user.role === 'admin')) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Forbidden: Access restricted to Library Staff, Teachers, and Admins' });
+  }
+};
+
+module.exports = { protect, requireRole, teacherOnly, canUploadFiles, canManageLibrary };

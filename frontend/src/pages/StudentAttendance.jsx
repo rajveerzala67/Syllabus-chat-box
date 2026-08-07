@@ -41,7 +41,7 @@ const StudentAttendance = () => {
     );
   }
 
-  if (!data) {
+  if (!data || !data.student) {
     return (
       <div className="container student-page-container fade-in">
         <div className="glass-card table-card no-files-msg" style={{ padding: '80px 20px' }}>

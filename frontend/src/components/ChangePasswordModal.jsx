@@ -56,10 +56,10 @@ const ChangePasswordModal = () => {
             <ShieldAlert size={32} />
           </div>
           <h3 style={{ color: '#0f172a', fontSize: '22px', fontWeight: 800 }}>
-            Set Your New Password
+            Account Setup: Set Permanent Password
           </h3>
           <p style={{ color: '#64748b', fontSize: '13.5px' }}>
-            Welcome! Set your permanent password below to complete your account setup and access your dashboard.
+            Welcome! You logged in using a temporary password. Please set your secure permanent password below to complete setup.
           </p>
         </div>
 
@@ -72,13 +72,13 @@ const ChangePasswordModal = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div className="sky-input-group">
-            <label>Current / Temporary Password (Optional)</label>
+            <label>Current Temporary Password</label>
             <div className="sky-input-wrapper">
               <KeyRound className="sky-input-icon" size={18} />
               <input
                 type={showCurrentPass ? "text" : "password"}
                 className="sky-input"
-                placeholder="Temporary password (e.g. SOU1234)"
+                placeholder="Temporary password (e.g. SOU-482915)"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
@@ -91,7 +91,7 @@ const ChangePasswordModal = () => {
               </button>
             </div>
             <small style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-              * First time setup: You can leave this blank if you don't have your temporary password.
+              * Enter your temporary password provided by your teacher (or leave blank).
             </small>
           </div>
 

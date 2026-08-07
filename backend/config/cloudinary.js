@@ -11,25 +11,56 @@ cloudinary.config({
   api_secret: apiSecret
 });
 
+const fs = require('fs');
+const path = require('path');
+
 /**
- * Upload image buffer to Cloudinary with timeout & fallback safety net
+ * Save image buffer locally inside uploads/student_photos
+ */
+const saveBufferLocally = (fileBuffer, mimeType = 'image/jpeg') => {
+  try {
+    const photosDir = path.join(__dirname, '../uploads/student_photos');
+    if (!fs.existsSync(photosDir)) {
+      fs.mkdirSync(photosDir, { recursive: true });
+    }
+    const ext = mimeType.includes('png') ? '.png' : mimeType.includes('webp') ? '.webp' : '.jpg';
+    const filename = `photo_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
+    const filePath = path.join(photosDir, filename);
+    fs.writeFileSync(filePath, fileBuffer);
+
+    console.log(`📸 Saved student photo locally to: /uploads/student_photos/${filename}`);
+    return {
+      url: `/uploads/student_photos/${filename}`,
+      public_id: `local_${filename}`
+    };
+  } catch (err) {
+    console.error('Error saving photo locally:', err);
+    const base64Str = fileBuffer.toString('base64');
+    return {
+      url: `data:${mimeType};base64,${base64Str}`,
+      public_id: `base64_${Date.now()}`
+    };
+  }
+};
+
+/**
+ * Upload image buffer to Cloudinary with timeout & local fallback safety net
  * @param {Buffer} fileBuffer - Image buffer from multer
  * @param {string} folder - Target Cloudinary folder name
+ * @param {string} mimeType - Image mimetype
  * @returns {Promise<{ url: string, public_id: string }>}
  */
-const uploadToCloudinary = (fileBuffer, folder = 'student_photos') => {
+const uploadToCloudinary = (fileBuffer, folder = 'student_photos', mimeType = 'image/jpeg') => {
   return new Promise((resolve) => {
     const rawCloudName = (process.env.CLOUDINARY_CLOUD_NAME || '').trim();
     const cleanCloudName = rawCloudName.replace(/\s+/g, '_');
     const curApiKey = (process.env.CLOUDINARY_API_KEY || '').trim();
     const curApiSecret = (process.env.CLOUDINARY_API_SECRET || '').trim();
 
-    // Fallback if missing credentials
+    // Fallback to local upload if missing credentials
     if (!rawCloudName || !curApiKey) {
-      console.warn('⚠️ Cloudinary credentials missing. Using fallback avatar.');
-      const fakePublicId = `dev_student_${Date.now()}`;
-      const fakeUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80`;
-      return resolve({ url: fakeUrl, public_id: fakePublicId });
+      console.warn('⚠️ Cloudinary credentials missing. Saving uploaded photo locally.');
+      return resolve(saveBufferLocally(fileBuffer, mimeType));
     }
 
     // Always re-apply sanitized config (removes spaces from cloud_name)
@@ -45,10 +76,8 @@ const uploadToCloudinary = (fileBuffer, folder = 'student_photos') => {
     const timeout = setTimeout(() => {
       if (!isResolved) {
         isResolved = true;
-        console.warn('⚠️ Cloudinary upload timed out (5s). Falling back to default avatar.');
-        const fakePublicId = `dev_student_${Date.now()}`;
-        const fakeUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80`;
-        resolve({ url: fakeUrl, public_id: fakePublicId });
+        console.warn('⚠️ Cloudinary upload timed out (5s). Saving uploaded photo locally.');
+        resolve(saveBufferLocally(fileBuffer, mimeType));
       }
     }, 5000);
 
@@ -67,10 +96,8 @@ const uploadToCloudinary = (fileBuffer, folder = 'student_photos') => {
           isResolved = true;
 
           if (error) {
-            console.error('Cloudinary Upload Warning (using fallback avatar):', error.message || error);
-            const fakePublicId = `dev_student_${Date.now()}`;
-            const fakeUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80`;
-            return resolve({ url: fakeUrl, public_id: fakePublicId });
+            console.error('Cloudinary Upload Warning (saving uploaded photo locally):', error.message || error);
+            return resolve(saveBufferLocally(fileBuffer, mimeType));
           }
 
           resolve({
@@ -85,21 +112,33 @@ const uploadToCloudinary = (fileBuffer, folder = 'student_photos') => {
       clearTimeout(timeout);
       if (!isResolved) {
         isResolved = true;
-        console.warn('Cloudinary Stream Error (using fallback avatar):', err.message || err);
-        const fakePublicId = `dev_student_${Date.now()}`;
-        const fakeUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80`;
-        resolve({ url: fakeUrl, public_id: fakePublicId });
+        console.warn('Cloudinary Stream Error (saving uploaded photo locally):', err.message || err);
+        resolve(saveBufferLocally(fileBuffer, mimeType));
       }
     }
   });
 };
 
 /**
- * Delete image from Cloudinary by public ID
- * @param {string} publicId - Cloudinary image public_id
+ * Delete image from Cloudinary or local storage
+ * @param {string} publicId - Cloudinary image public_id or local public_id
  */
 const deleteFromCloudinary = async (publicId) => {
   if (!publicId || publicId.startsWith('dev_student_')) {
+    return;
+  }
+
+  if (publicId.startsWith('local_')) {
+    try {
+      const filename = publicId.replace('local_', '');
+      const filePath = path.join(__dirname, '../uploads/student_photos', filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Local photo deleted (${filename})`);
+      }
+    } catch (err) {
+      console.error('Error deleting local photo:', err);
+    }
     return;
   }
 

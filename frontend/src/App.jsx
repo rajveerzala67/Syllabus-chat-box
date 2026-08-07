@@ -8,7 +8,9 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Students from './pages/Students';
 import Lectures from './pages/Lectures';
-import NfcScanner from './pages/NfcScanner';
+import LibraryDashboard from './pages/LibraryDashboard';
+import LibraryScanner from './pages/LibraryScanner';
+import StudentLibrary from './pages/StudentLibrary';
 import AttendanceReports from './pages/AttendanceReports';
 import StudentAttendance from './pages/StudentAttendance';
 import Files from './pages/Files';
@@ -48,6 +50,36 @@ function App() {
             } 
           />
           <Route 
+            path="/library" 
+            element={
+              <ProtectedRoute allowedRoles={['library_staff', 'teacher', 'admin']}>
+                <Layout>
+                  <LibraryDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/library-scanner" 
+            element={
+              <ProtectedRoute allowedRoles={['library_staff', 'teacher', 'admin']}>
+                <Layout>
+                  <LibraryScanner />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/my-library" 
+            element={
+              <ProtectedRoute allowedRoles={['student', 'coordinator']}>
+                <Layout>
+                  <StudentLibrary />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/students" 
             element={
               <ProtectedRoute allowedRoles={['teacher', 'admin']}>
@@ -67,16 +99,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/nfc-scanner/:sessionId" 
-            element={
-              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
-                <Layout>
-                  <NfcScanner />
-                </Layout>
-              </ProtectedRoute>
-            } 
-          />
+
           <Route 
             path="/attendance-reports" 
             element={
