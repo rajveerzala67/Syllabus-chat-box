@@ -40,14 +40,16 @@ const Files = () => {
       return;
     }
 
-    // Client side type check (images or pdf)
+    // Client side type check (images, pdf, word, ppt, excel, text notes)
     const validFiles = selectedFiles.filter(file => {
-      const type = file.type;
-      return type.startsWith('image/') || type === 'application/pdf';
+      const type = (file.type || '').toLowerCase();
+      const ext = (file.name || '').toLowerCase();
+      const validExt = /\.(jpg|jpeg|png|webp|gif|svg|pdf|doc|docx|ppt|pptx|xls|xlsx|txt|csv|md)$/.test(ext);
+      return type.startsWith('image/') || type.includes('pdf') || type.includes('document') || type.includes('presentation') || type.includes('sheet') || type.includes('text') || validExt;
     });
 
     if (validFiles.length !== selectedFiles.length) {
-      alert('Some files were ignored. Only images and PDF files are allowed!');
+      alert('Some files were ignored. Supported formats: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX), Text notes, and Images!');
     }
 
     if (validFiles.length === 0) return;
@@ -138,6 +140,14 @@ const Files = () => {
           mime = 'image/png';
         } else if (lowerName.endsWith('.webp')) {
           mime = 'image/webp';
+        } else if (lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+          mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        } else if (lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt')) {
+          mime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls')) {
+          mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else if (lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
+          mime = 'text/plain';
         }
 
         const fileBlob = new Blob([response.data], { type: mime });
@@ -170,26 +180,49 @@ const Files = () => {
   };
 
   const handlePreview = (file) => {
-    if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://') || file.url.startsWith('data:'))) {
-      window.open(file.url, '_blank', 'noopener,noreferrer');
-    } else {
+    if (!file.url || (!file.url.startsWith('http') && !file.url.startsWith('data:'))) {
       alert('Preview is unavailable for this old file. Please delete it and upload a fresh copy.');
+      return;
     }
+
+    const fileName = (file.name || '').toLowerCase();
+    const mime = (file.mimeType || '').toLowerCase();
+
+    const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(fileName);
+    const isPdf = mime.includes('pdf') || fileName.endsWith('.pdf');
+    const isTxt = mime.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md');
+    const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(fileName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
+
+    // Images, PDFs, and TXT files open directly in browser over HTTPS
+    if (isImage || isPdf || isTxt || file.url.startsWith('data:')) {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // Office Documents (Word, PowerPoint, Excel) open using Google Docs Viewer
+    if (isOfficeDoc && (file.url.startsWith('http://') || file.url.startsWith('https://'))) {
+      const gviewUrl = `https://docs.google.com/gview?url=${encodeURIComponent(file.url)}&embedded=true`;
+      window.open(gviewUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // Fallback: open directly in browser tab
+    window.open(file.url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="container files-container fade-in">
       <div className="glass-card files-card">
-        <h2>📎 Shared Class Files</h2>
+        <h2>📎 Shared Class Files & Lecture Notes</h2>
 
         {canUpload && (
           <div className="upload-section glass-card inner-card">
-            <h3>Upload Class Resource</h3>
+            <h3>Upload Class Resource & Notes</h3>
             <div className="upload-controls">
               <input
                 type="file"
                 id="file-upload-input"
-                accept="image/*,application/pdf"
+                accept="image/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.md"
                 multiple
                 onChange={handleFileChange}
               />
@@ -206,12 +239,12 @@ const Files = () => {
                 ) : (
                   <>
                     <Upload size={16} className="mr-6" />
-                    <span>Upload</span>
+                    <span>Upload Notes / Files</span>
                   </>
                 )}
               </button>
             </div>
-            <small className="help-text">Allowed formats: Images, PDF. Max file size: 10MB.</small>
+            <small className="help-text">Allowed formats: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX), Text notes, and Images. Max file size: 20MB.</small>
           </div>
         )}
 
