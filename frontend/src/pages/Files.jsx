@@ -110,21 +110,58 @@ const Files = () => {
         return;
       }
 
-      // 2. Format Cloudinary URL: ONLY apply fl_attachment to image uploads (/image/upload/)
-      let finalUrl = downloadUrl;
-      if (downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/image/upload/')) {
-        finalUrl = downloadUrl.replace('/image/upload/', '/image/upload/fl_attachment/');
+      // 2. Handle Data URIs directly
+      if (downloadUrl.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
       }
 
-      // 3. Trigger native browser download via anchor element
-      const link = document.createElement('a');
-      link.href = finalUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      // 3. For Cloudinary/HTTP URLs: Fetch raw binary ArrayBuffer using clean un-authenticated Axios
+      // and explicitly construct a Blob with proper MIME type (application/pdf for PDFs)
+      try {
+        const cleanAxios = axios.create(); // Clean instance without Authorization header
+        const response = await cleanAxios.get(downloadUrl, { responseType: 'arraybuffer' });
+
+        // Determine correct MIME type explicitly based on file extension
+        let mime = file.mimeType || 'application/octet-stream';
+        const lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith('.pdf')) {
+          mime = 'application/pdf';
+        } else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+          mime = 'image/jpeg';
+        } else if (lowerName.endsWith('.png')) {
+          mime = 'image/png';
+        } else if (lowerName.endsWith('.webp')) {
+          mime = 'image/webp';
+        }
+
+        const fileBlob = new Blob([response.data], { type: mime });
+        const blobUrl = window.URL.createObjectURL(fileBlob);
+
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 15000);
+        return;
+      } catch (fetchErr) {
+        console.warn('ArrayBuffer fetch fallback to direct link:', fetchErr);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     } catch (err) {
       console.error('Download error:', err);
       const errMsg = err.response?.data?.message || 'Unable to download file. It may have been uploaded prior to server restart. Please delete and re-upload.';
