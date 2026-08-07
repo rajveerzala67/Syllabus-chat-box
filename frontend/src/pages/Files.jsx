@@ -179,35 +179,47 @@ const Files = () => {
     }
   };
 
-  const handlePreview = (file) => {
-    if (!file.url || (!file.url.startsWith('http') && !file.url.startsWith('data:'))) {
-      alert('Preview is unavailable for this old file. Please delete it and upload a fresh copy.');
-      return;
+  const handlePreview = async (file) => {
+    try {
+      let previewUrl = file.url;
+      const fileName = (file.name || '').toLowerCase();
+
+      if (!previewUrl || (!previewUrl.startsWith('http') && !previewUrl.startsWith('data:'))) {
+        const res = await api.get(`/files/download/${file._id}`);
+        if (res.data?.downloadUrl) {
+          previewUrl = res.data.downloadUrl;
+        }
+      }
+
+      if (!previewUrl) {
+        alert('File preview unavailable. Please delete and re-upload this file.');
+        return;
+      }
+
+      const mime = (file.mimeType || '').toLowerCase();
+      const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(fileName);
+      const isPdf = mime.includes('pdf') || fileName.endsWith('.pdf');
+      const isTxt = mime.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md');
+      const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(fileName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
+
+      if (isImage || isPdf || isTxt || previewUrl.startsWith('data:')) {
+        window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (isOfficeDoc && (previewUrl.startsWith('http://') || previewUrl.startsWith('https://'))) {
+        const gviewUrl = `https://docs.google.com/gview?url=${encodeURIComponent(previewUrl)}&embedded=true`;
+        window.open(gviewUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Preview error:', err);
+      if (file.url) {
+        window.open(file.url, '_blank', 'noopener,noreferrer');
+      }
     }
-
-    const fileName = (file.name || '').toLowerCase();
-    const mime = (file.mimeType || '').toLowerCase();
-
-    const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(fileName);
-    const isPdf = mime.includes('pdf') || fileName.endsWith('.pdf');
-    const isTxt = mime.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md');
-    const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(fileName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
-
-    // Images, PDFs, and TXT files open directly in browser over HTTPS
-    if (isImage || isPdf || isTxt || file.url.startsWith('data:')) {
-      window.open(file.url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    // Office Documents (Word, PowerPoint, Excel) open using Google Docs Viewer
-    if (isOfficeDoc && (file.url.startsWith('http://') || file.url.startsWith('https://'))) {
-      const gviewUrl = `https://docs.google.com/gview?url=${encodeURIComponent(file.url)}&embedded=true`;
-      window.open(gviewUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    // Fallback: open directly in browser tab
-    window.open(file.url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -261,47 +273,51 @@ const Files = () => {
           ) : (
             <div className="files-grid">
               {files.map((file) => {
-                const isImage = file.mimeType.startsWith('image/');
                 const when = new Date(file.uploadedAt).toLocaleString();
                 return (
-                  <div key={file._id} className="file-item-card glass-card inner-card">
-                    <div className="file-info-left">
-                      <div className="file-icon-box">
-                        <File className="file-icon" size={24} />
+                  <div key={file._id} className="file-item-card glass-card inner-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', gap: '16px' }}>
+                    <div className="file-info-left" style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+                      <div className="file-icon-box" style={{ background: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <File className="file-icon" size={26} />
                       </div>
-                      <div className="file-metadata">
-                        <span className="file-name">{file.name}</span>
-                        <span className="file-details">
+                      <div className="file-metadata" style={{ overflow: 'hidden' }}>
+                        <span className="file-name" style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {file.name}
+                        </span>
+                        <span className="file-details" style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px', display: 'block' }}>
                           {file.mimeType} • {when}
                         </span>
                       </div>
                     </div>
 
-                    <div className="file-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="file-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      {/* BRIGHT BLUE EYE BUTTON FOR WATCHING/VIEWING FILE */}
                       <button 
                         type="button"
                         onClick={() => handlePreview(file)} 
-                        className="preview-btn"
-                        title="View / Preview file in browser"
+                        className="blue-eye-btn"
+                        title="Watch / View file in browser"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          background: '#0284c7',
+                          background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
                           color: '#ffffff',
-                          padding: '8px 14px',
+                          padding: '9px 16px',
                           borderRadius: '10px',
                           border: 'none',
-                          fontWeight: '700',
-                          fontSize: '13px',
+                          fontWeight: '800',
+                          fontSize: '14px',
                           cursor: 'pointer',
-                          boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)'
+                          boxShadow: '0 4px 16px rgba(2, 132, 199, 0.45)',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <Eye size={16} />
-                        <span>View</span>
+                        <Eye size={18} style={{ color: '#ffffff' }} />
+                        <span>Watch / View</span>
                       </button>
 
+                      {/* DOWNLOAD BUTTON */}
                       <button 
                         type="button"
                         onClick={() => handleDownload(file)} 
@@ -312,9 +328,9 @@ const Files = () => {
                           alignItems: 'center',
                           gap: '6px',
                           background: 'rgba(16, 185, 129, 0.15)',
-                          color: '#10b981',
+                          color: '#34d399',
                           border: '1px solid rgba(16, 185, 129, 0.4)',
-                          padding: '8px 14px',
+                          padding: '9px 14px',
                           borderRadius: '10px',
                           fontWeight: '700',
                           fontSize: '13px',
@@ -338,7 +354,7 @@ const Files = () => {
                             background: 'rgba(239, 68, 68, 0.15)',
                             color: '#ef4444',
                             border: '1px solid rgba(239, 68, 68, 0.3)',
-                            padding: '8px 12px',
+                            padding: '9px 12px',
                             borderRadius: '10px',
                             cursor: 'pointer'
                           }}
