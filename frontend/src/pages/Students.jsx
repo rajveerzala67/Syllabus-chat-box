@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { api, AuthContext, getStudentPhotoUrl } from '../context/AuthContext';
 import {
   Users, UserPlus, Search, Filter, RefreshCw, Eye, Edit3, Trash2,
@@ -19,6 +19,7 @@ const DIVISIONS = ['A', 'B', 'C', 'D'];
 
 const Students = () => {
   const { user } = useContext(AuthContext);
+  const fileInputRef = useRef(null);
 
   // Data states
   const [students, setStudents] = useState([]);
@@ -716,27 +717,48 @@ const Students = () => {
                       <div className="upload-input-area" style={{ position: 'relative' }}>
                         <UploadCloud size={24} className="upload-icon" />
                         <input
+                          ref={fileInputRef}
                           type="file"
                           accept="image/jpeg,image/png,image/jpg,image/webp"
                           onChange={handleFileChange}
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }}
                         />
-                        <span>{photoFile ? photoFile.name : (modalMode === 'edit' ? '📸 Click here to choose a new photo' : 'Click or drag image file here')}</span>
+                        <span>{photoFile ? photoFile.name : (modalMode === 'edit' ? '📸 Click here or button to pick new photo' : 'Click or drag image file here')}</span>
                         <small>Allowed formats: JPG, PNG, WEBP (Max 5MB)</small>
                       </div>
                       {photoPreview && (
-                        <div className="photo-preview-box" style={{ zIndex: 5 }}>
+                        <div className="photo-preview-box" style={{ zIndex: 15, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <img 
                             src={getStudentPhotoUrl(photoPreview)} 
-                            alt="Passport Preview" 
+                            alt="Passport Preview"
+                            title="Click to select a new photo"
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ cursor: 'pointer' }}
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80';
                             }}
                           />
-                          <span className="preview-tag" style={{ background: photoFile ? '#10b981' : '#0284c7' }}>
-                            {photoFile ? 'New Photo Selected' : 'Current Photo'}
-                          </span>
+                          <button
+                            type="button"
+                            className="preview-tag-btn"
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{
+                              marginTop: '8px',
+                              padding: '8px 14px',
+                              background: photoFile ? '#10b981' : '#0284c7',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            📸 {photoFile ? 'Change Photo' : 'Select New Photo'}
+                          </button>
                         </div>
                       )}
                     </div>
