@@ -276,8 +276,13 @@ const Files = () => {
                 const when = new Date(file.uploadedAt).toLocaleString();
                 return (
                   <div key={file._id} className="file-item-card glass-card inner-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', gap: '16px' }}>
-                    <div className="file-info-left" style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                      <div className="file-icon-box" style={{ background: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div 
+                      className="file-info-left" 
+                      onClick={() => handlePreview(file)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0, cursor: 'pointer' }}
+                      title="Click to Watch / View file"
+                    >
+                      <div className="file-icon-box" style={{ background: 'rgba(2, 132, 199, 0.25)', color: '#38bdf8', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <File className="file-icon" size={26} />
                       </div>
                       <div className="file-metadata" style={{ overflow: 'hidden' }}>
