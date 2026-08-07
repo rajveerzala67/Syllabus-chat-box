@@ -17,11 +17,11 @@ const path = require('path');
 /**
  * Save image buffer locally inside uploads/student_photos
  */
-const saveBufferLocally = (fileBuffer, mimeType = 'image/jpeg') => {
+const saveBufferLocally = (fileBuffer, mimeType = 'application/octet-stream') => {
   try {
     const base64Str = fileBuffer.toString('base64');
     const dataUri = `data:${mimeType};base64,${base64Str}`;
-    console.log(`📸 Generated persistent Data URI for photo (${Math.round(base64Str.length / 1024)} KB)`);
+    console.log(`📸 Generated persistent Data URI for file (${Math.round(base64Str.length / 1024)} KB)`);
     return {
       url: dataUri,
       public_id: `base64_${Date.now()}_${Math.round(Math.random() * 1e6)}`

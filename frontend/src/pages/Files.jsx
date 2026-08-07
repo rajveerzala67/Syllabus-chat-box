@@ -182,7 +182,7 @@ const Files = () => {
   const handlePreview = async (file) => {
     try {
       let previewUrl = file.url;
-      const fileName = (file.name || '').toLowerCase();
+      const fileName = file.name || 'file';
 
       if (!previewUrl || (!previewUrl.startsWith('http') && !previewUrl.startsWith('data:'))) {
         const res = await api.get(`/files/download/${file._id}`);
@@ -196,13 +196,49 @@ const Files = () => {
         return;
       }
 
-      const mime = (file.mimeType || '').toLowerCase();
-      const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(fileName);
-      const isPdf = mime.includes('pdf') || fileName.endsWith('.pdf');
-      const isTxt = mime.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md');
-      const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(fileName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
+      // 1. Data URIs - Decode Base64 to Blob URL for clean PDF/Image viewing
+      if (previewUrl.startsWith('data:')) {
+        const parts = previewUrl.split(';base64,');
+        let contentType = parts[0].replace('data:', '');
+        if (fileName.toLowerCase().endsWith('.pdf')) {
+          contentType = 'application/pdf';
+        }
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+        for (let i = 0; i < rawLength; ++i) {
+          uInt8Array[i] = raw.charCodeAt(i);
+        }
+        const blob = new Blob([uInt8Array], { type: contentType });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        return;
+      }
 
-      if (isImage || isPdf || isTxt || previewUrl.startsWith('data:')) {
+      // 2. PDFs from Cloudinary/HTTP - Fetch ArrayBuffer and create Blob URL for native tab view
+      const lowerName = fileName.toLowerCase();
+      if (lowerName.endsWith('.pdf') || (file.mimeType && file.mimeType.includes('pdf'))) {
+        try {
+          const cleanAxios = axios.create();
+          const response = await cleanAxios.get(previewUrl, { responseType: 'arraybuffer' });
+          const fileBlob = new Blob([response.data], { type: 'application/pdf' });
+          const blobUrl = window.URL.createObjectURL(fileBlob);
+          window.open(blobUrl, '_blank', 'noopener,noreferrer');
+          setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+          return;
+        } catch (e) {
+          window.open(previewUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
+
+      const mime = (file.mimeType || '').toLowerCase();
+      const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(lowerName);
+      const isTxt = mime.includes('text') || lowerName.endsWith('.txt') || lowerName.endsWith('.md');
+      const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(lowerName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
+
+      if (isImage || isTxt) {
         window.open(previewUrl, '_blank', 'noopener,noreferrer');
         return;
       }
