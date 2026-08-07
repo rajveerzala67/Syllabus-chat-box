@@ -277,31 +277,73 @@ const Files = () => {
                       </div>
                     </div>
 
-                    <div className="file-actions">
+                    <div className="file-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <button 
+                        type="button"
                         onClick={() => handlePreview(file)} 
                         className="preview-btn"
                         title="View / Preview file in browser"
-                        style={{ marginRight: '6px' }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#0284c7',
+                          color: '#ffffff',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          fontWeight: '700',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)'
+                        }}
                       >
-                        <Eye size={18} />
+                        <Eye size={16} />
+                        <span>View</span>
                       </button>
 
                       <button 
+                        type="button"
                         onClick={() => handleDownload(file)} 
                         className="download-btn"
                         title="Download file"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          fontWeight: '700',
+                          fontSize: '13px',
+                          cursor: 'pointer'
+                        }}
                       >
-                        <Download size={18} />
+                        <Download size={16} />
+                        <span>Download</span>
                       </button>
                       
                       {canUpload && (
                         <button 
+                          type="button"
                           onClick={() => handleDelete(file._id)} 
                           className="delete-btn"
                           title="Delete file"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            cursor: 'pointer'
+                          }}
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>
