@@ -111,7 +111,9 @@ router.get('/download/:id', protect, async (req, res) => {
     }
 
     // 3. Fallback error when local file missing on Render disk
-    res.status(404).json({ message: 'File is no longer available on disk. Please delete and re-upload.' });
+    res.status(404).json({
+      message: 'This old file was uploaded before Cloudinary integration and is no longer stored on server disk. Please delete it and upload a new copy.'
+    });
   } catch (error) {
     console.error('Error downloading file:', error);
     res.status(500).json({ message: error.message || 'Server error downloading file' });
