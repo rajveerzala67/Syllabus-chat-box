@@ -183,80 +183,18 @@ const Files = () => {
     }
   };
 
+  const getDirectViewUrl = (file) => {
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    return `${cleanBase}/files/view/${file._id}`;
+  };
+
   const handlePreview = async (file) => {
     try {
-      let previewUrl = file.url;
-      const fileName = file.name || 'file';
-
-      if (!previewUrl || (!previewUrl.startsWith('http') && !previewUrl.startsWith('data:'))) {
-        const res = await api.get(`/files/download/${file._id}`);
-        if (res.data?.downloadUrl) {
-          previewUrl = res.data.downloadUrl;
-        }
-      }
-
-      if (!previewUrl) {
-        alert('File preview unavailable. Please delete and re-upload this file.');
-        return;
-      }
-
+      const directUrl = getDirectViewUrl(file);
       setViewingFile(file);
-
-      // 1. Data URIs - Decode Base64 to Blob URL for clean PDF/Image viewing
-      if (previewUrl.startsWith('data:')) {
-        const parts = previewUrl.split(';base64,');
-        let contentType = parts[0].replace('data:', '');
-        if (fileName.toLowerCase().endsWith('.pdf')) {
-          contentType = 'application/pdf';
-        }
-        const raw = window.atob(parts[1]);
-        const rawLength = raw.length;
-        const uInt8Array = new Uint8Array(rawLength);
-        for (let i = 0; i < rawLength; ++i) {
-          uInt8Array[i] = raw.charCodeAt(i);
-        }
-        const blob = new Blob([uInt8Array], { type: contentType });
-        const blobUrl = URL.createObjectURL(blob);
-        setPdfBlobUrl(blobUrl);
-        window.open(blobUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      // 2. PDFs from Cloudinary/HTTP - Fetch ArrayBuffer and create Blob URL for native tab view
-      const lowerName = fileName.toLowerCase();
-      if (lowerName.endsWith('.pdf') || (file.mimeType && file.mimeType.includes('pdf'))) {
-        try {
-          const cleanAxios = axios.create();
-          const response = await cleanAxios.get(previewUrl, { responseType: 'arraybuffer' });
-          const fileBlob = new Blob([response.data], { type: 'application/pdf' });
-          const blobUrl = window.URL.createObjectURL(fileBlob);
-          setPdfBlobUrl(blobUrl);
-          window.open(blobUrl, '_blank', 'noopener,noreferrer');
-          return;
-        } catch (e) {
-          setPdfBlobUrl(previewUrl);
-          window.open(previewUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-      }
-
-      const mime = (file.mimeType || '').toLowerCase();
-      const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/.test(lowerName);
-      const isTxt = mime.includes('text') || lowerName.endsWith('.txt') || lowerName.endsWith('.md');
-      const isOfficeDoc = /\.(doc|docx|ppt|pptx|xls|xlsx)$/.test(lowerName) || mime.includes('word') || mime.includes('presentation') || mime.includes('spreadsheet');
-
-      if (isImage || isTxt) {
-        window.open(previewUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      if (isOfficeDoc && (previewUrl.startsWith('http://') || previewUrl.startsWith('https://'))) {
-        const gviewUrl = `https://docs.google.com/gview?url=${encodeURIComponent(previewUrl)}&embedded=true`;
-        window.open(gviewUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      setPdfBlobUrl(directUrl);
+      window.open(directUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
       console.error('Preview error:', err);
       if (file.url) {
@@ -339,10 +277,11 @@ const Files = () => {
                     </div>
 
                     <div className="file-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                      {/* BRIGHT BLUE EYE BUTTON FOR WATCHING/VIEWING FILE */}
-                      <button 
-                        type="button"
-                        onClick={() => handlePreview(file)} 
+                      {/* DIRECT LINK BUTTON TO VIEW FILE INLINE */}
+                      <a 
+                        href={getDirectViewUrl(file)}
+                        target="_blank"
+                        rel="noreferrer"
                         className="blue-eye-btn"
                         title="Watch / View file in browser"
                         style={{
@@ -353,17 +292,16 @@ const Files = () => {
                           color: '#ffffff',
                           padding: '9px 16px',
                           borderRadius: '10px',
-                          border: 'none',
+                          textDecoration: 'none',
                           fontWeight: '800',
                           fontSize: '14px',
-                          cursor: 'pointer',
                           boxShadow: '0 4px 16px rgba(2, 132, 199, 0.45)',
                           transition: 'all 0.2s ease'
                         }}
                       >
                         <Eye size={18} style={{ color: '#ffffff' }} />
-                        <span>Watch / View</span>
-                      </button>
+                        <span>Watch / View File</span>
+                      </a>
 
                       {/* DOWNLOAD BUTTON */}
                       <button 

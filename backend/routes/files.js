@@ -124,6 +124,68 @@ router.get('/download/:id', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/files/view/:id
+// @desc    Direct inline file viewer proxy (bypasses Cloudinary forced download & CORS restrictions)
+// @access  Public
+router.get('/view/:id', async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) {
+      return res.status(404).send('File record not found in database.');
+    }
+
+    let fileUrl = file.url;
+    const fileName = file.name || 'document.pdf';
+
+    // 1. Data URI Base64 Stream
+    if (fileUrl && fileUrl.startsWith('data:')) {
+      const parts = fileUrl.split(';base64,');
+      let mime = parts[0].replace('data:', '') || file.mimeType || 'application/pdf';
+      if (fileName.toLowerCase().endsWith('.pdf')) {
+        mime = 'application/pdf';
+      }
+      const fileBuffer = Buffer.from(parts[1], 'base64');
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+      return res.send(fileBuffer);
+    }
+
+    // 2. HTTP / Cloudinary Stream Proxy
+    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+      const axios = require('axios');
+      try {
+        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        let contentType = response.headers['content-type'] || file.mimeType || 'application/pdf';
+        if (fileName.toLowerCase().endsWith('.pdf')) {
+          contentType = 'application/pdf';
+        }
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+        return res.send(Buffer.from(response.data));
+      } catch (err) {
+        return res.redirect(fileUrl);
+      }
+    }
+
+    // 3. Local disk fallback
+    const fileNameOnDisk = file.path ? path.basename(file.path) : file.name;
+    const filePath = path.join(uploadDir, fileNameOnDisk);
+
+    if (fs.existsSync(filePath)) {
+      let contentType = file.mimeType || 'application/pdf';
+      if (fileName.toLowerCase().endsWith('.pdf')) contentType = 'application/pdf';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+      return fs.createReadStream(filePath).pipe(res);
+    }
+
+    res.status(404).send('File content unavailable.');
+  } catch (error) {
+    console.error('Error viewing file inline:', error);
+    res.status(500).send('Error streaming file preview.');
+  }
+});
+
 // @route   DELETE /api/files/:id
 // @desc    Delete file by ID
 // @access  Private (Coordinator, Teacher, Admin)
